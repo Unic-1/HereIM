@@ -1,4 +1,4 @@
-package com.unic_1.imhere;
+package com.unic_1.hereim;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

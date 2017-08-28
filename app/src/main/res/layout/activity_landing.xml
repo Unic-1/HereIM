@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.unic_1.hereim.LandingActivity">
+
+    <Button
+        android:id="@+id/bask"
+        android:layout_width="300dp"
+        android:layout_height="150dp"
+        android:layout_above="@+id/centerView"
+        android:layout_alignLeft="@+id/banswer"
+        android:layout_alignStart="@+id/banswer"
+        android:text="Where are you?" />
+
+    <View
+        android:id="@+id/centerView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        />
+
+    <Button
+        android:id="@+id/banswer"
+        android:layout_width="300dp"
+        android:layout_height="150dp"
+        android:text="I am here"
+        android:layout_below="@+id/centerView"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="25dp" />
+</RelativeLayout>
