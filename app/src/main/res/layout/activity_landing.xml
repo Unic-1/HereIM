@@ -13,6 +13,7 @@
         android:layout_above="@+id/centerView"
         android:layout_alignLeft="@+id/banswer"
         android:layout_alignStart="@+id/banswer"
+        android:onClick="ask"
         android:text="Where are you?" />
 
     <View
@@ -29,8 +30,9 @@
         android:id="@+id/banswer"
         android:layout_width="300dp"
         android:layout_height="150dp"
-        android:text="I am here"
         android:layout_below="@+id/centerView"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="25dp" />
+        android:layout_marginBottom="25dp"
+        android:onClick="answer"
+        android:text="I am here" />
 </RelativeLayout>
