@@ -46,8 +46,8 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
         public NotificationViewHolder(View itemView) {
             super(itemView);
-            tvMessage = itemView.findViewById(R.id.tvMessage);
-            tvSender = itemView.findViewById(R.id.tvSender);
+            tvMessage = (TextView) itemView.findViewById(R.id.tvMessage);
+            tvSender = (TextView) itemView.findViewById(R.id.tvSender);
         }
 
         public void setMessage(String message) {
