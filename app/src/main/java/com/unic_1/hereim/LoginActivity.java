@@ -28,9 +28,6 @@ import java.util.concurrent.TimeUnit;
 
 public class LoginActivity extends AppCompatActivity {
 
-
-
-
     private static final String TAG = "LOGIN ACTIVITY";
 
     // [START declare_auth]
@@ -47,7 +44,7 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        getSupportActionBar().setTitle("Login");
+        /*getSupportActionBar().setTitle("Login");*/
 
         Spinner countrySpinner = (Spinner) findViewById(R.id.spinner);
         String[] list = {"India", "Nepal", "Bhutan", "Sri Lanka", "Bangladesh"};
@@ -140,11 +137,11 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    public void otpVerify(View v) {
+    /*public void otpVerify(View v) {
         PhoneAuthCredential credential = PhoneAuthProvider.getCredential(mVerificationId, ((TextView)findViewById(R.id.etotp)).getText().toString());
 
         signInWithPhoneAuthCredential(credential);
-    }
+    }*/
 
     public void resendOtp(View v) {
 
@@ -174,8 +171,8 @@ public class LoginActivity extends AppCompatActivity {
 
     // Hides the components used for phone verification
     public void hideFirst() {
-        findViewById(R.id.cardViewVerify).setVisibility(View.GONE);
-        findViewById(R.id.cardViewVerifyText).setVisibility(View.GONE);
+        /*findViewById(R.id.cardViewVerify).setVisibility(View.GONE);
+        findViewById(R.id.cardViewVerifyText).setVisibility(View.GONE);*/
         findViewById(R.id.spinner).setVisibility(View.GONE);
         findViewById(R.id.bPhoneSubmit).setVisibility(View.GONE);
         findViewById(R.id.etphone).setVisibility(View.GONE);
@@ -183,8 +180,8 @@ public class LoginActivity extends AppCompatActivity {
 
     // Shows the components used for phone verification
     public void showFirst() {
-        findViewById(R.id.cardViewVerify).setVisibility(View.VISIBLE);
-        findViewById(R.id.cardViewVerifyText).setVisibility(View.VISIBLE);
+        /*findViewById(R.id.cardViewVerify).setVisibility(View.VISIBLE);
+        findViewById(R.id.cardViewVerifyText).setVisibility(View.VISIBLE);*/
         findViewById(R.id.spinner).setVisibility(View.VISIBLE);
         findViewById(R.id.bPhoneSubmit).setVisibility(View.VISIBLE);
         findViewById(R.id.etphone).setVisibility(View.VISIBLE);
@@ -192,17 +189,17 @@ public class LoginActivity extends AppCompatActivity {
 
     // Hides the components used for OTP verification
     public void hideSecond() {
-        findViewById(R.id.cardViewVerifyOTP).setVisibility(View.GONE);
-        findViewById(R.id.botpSubmit).setVisibility(View.GONE);
+        /*findViewById(R.id.cardViewVerifyOTP).setVisibility(View.GONE);*/
+        /*findViewById(R.id.botpSubmit).setVisibility(View.GONE);
         findViewById(R.id.etotp).setVisibility(View.GONE);
-        findViewById(R.id.resendCode).setVisibility(View.GONE);
+        findViewById(R.id.resendCode).setVisibility(View.GONE);*/
     }
 
     // Hides the components used for OTP verification
     public void showSecond() {
-        findViewById(R.id.cardViewVerifyOTP).setVisibility(View.VISIBLE);
+        /*findViewById(R.id.cardViewVerifyOTP).setVisibility(View.VISIBLE);
         findViewById(R.id.botpSubmit).setVisibility(View.VISIBLE);
         findViewById(R.id.etotp).setVisibility(View.VISIBLE);
-        findViewById(R.id.resendCode).setVisibility(View.VISIBLE);
+        findViewById(R.id.resendCode).setVisibility(View.VISIBLE);*/
     }
 }

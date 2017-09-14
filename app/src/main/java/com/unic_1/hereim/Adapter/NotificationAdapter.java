@@ -6,7 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.unic_1.hereim.Model.NotificationModel;
+import com.unic_1.hereim.Model.Request;
 import com.unic_1.hereim.R;
 
 import java.util.ArrayList;
@@ -16,9 +16,9 @@ import java.util.ArrayList;
  */
 
 public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapter.NotificationViewHolder> {
-    ArrayList<NotificationModel> notificationList;
+    ArrayList<Request> notificationList;
 
-    public NotificationAdapter(ArrayList<NotificationModel> notificationList) {
+    public NotificationAdapter(ArrayList<Request> notificationList) {
         this.notificationList = notificationList;
     }
 
@@ -31,8 +31,8 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
     @Override
     public void onBindViewHolder(NotificationViewHolder holder, int position) {
-        holder.setMessage(notificationList.get(position).getMessage());
-        holder.setSender(notificationList.get(position).getSender());
+
+
     }
 
     @Override
@@ -57,5 +57,9 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         public void setSender(String sender) {
             tvSender.setText(sender);
         }
+    }
+
+    interface OnItemClickListener {
+        public void onClick();
     }
 }

@@ -10,6 +10,21 @@ import java.util.ArrayList;
 
 public class Constant {
 
+    // Types of actions in a request
+    public enum Actions {
+        REQUEST_SENT(0),
+        REQUEST_RECEIVED(1),
+        LOCATION_RECEIVED(2),
+        REQEUST_DECLINED(3),
+        LOCATION_SENT(4);
+
+        public int value;
+        private Actions(int value) {
+            this.value = value;
+        }
+    }
+
+
     public static ArrayList<NotificationModel> getList() {
         ArrayList<NotificationModel> notificationList = new ArrayList<>();
 

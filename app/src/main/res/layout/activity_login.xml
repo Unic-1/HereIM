@@ -1,124 +1,99 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="10dp"
-    tools:context="com.unic_1.hereim.LoginActivity">
+    android:background="#fff">
 
-    <android.support.v7.widget.CardView
-        android:id="@+id/cardViewVerifyOTP"
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="5dp"
-        android:visibility="gone">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <TextView
+            <LinearLayout
+                android:id="@+id/innerlinear"
+                android:layout_width="match_parent"
+                android:layout_height="250dp"
+                android:background="#ffae42"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginRight="10dp"
+                    android:layout_marginTop="50dp"
+                    android:background="@drawable/border_style"
+                    android:text="WE WILL SEND YOUR ONE TIME PASSWORD TO VERIFY YOUR PHONE NUMBER. CARRIER SMS CHARGES WILL BE APPLIED."
+                     />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginRight="10dp"
+                    android:layout_marginTop="40dp"
+                    android:background="@drawable/border_style"
+                    android:text="VERIFY YOUR PHONE NUMBER"
+                     />
+
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_below="@id/innerlinear"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="-25dp"
+                android:src="@drawable/gjhg" />
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="15dp"
-            android:gravity="center_horizontal"
-            android:text="Verify OTP:"
-            android:textSize="17sp"
-            android:textStyle="bold" />
-    </android.support.v7.widget.CardView>
+            android:layout_height="250dp"
+            android:orientation="vertical">
 
-    <EditText
-        android:id="@+id/etotp"
-        android:layout_width="200dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="20dp"
-        android:gravity="center_horizontal"
-        android:hint="Code"
-        android:inputType="number"
-        android:visibility="gone" />
+            <Spinner
+                android:id="@+id/spinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:layout_marginTop="20dp"
+                android:padding="10dp"
+                android:background="@drawable/input_border"
+                android:entries="@array/Countries"
+                android:textAlignment="center" />
 
-    <Button
-        android:id="@+id/botpSubmit"
-        android:layout_width="150dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="10dp"
-        android:onClick="otpVerify"
-        android:text="Submit"
-        android:visibility="gone" />
+            <EditText
+                android:id="@+id/etphone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:layout_marginTop="20dp"
+                android:padding="10dp"
+                android:background="@drawable/input_border"
+                android:hint="Enter Phone Number"
+                android:inputType="number"
+                android:textAlignment="center" />
 
-    <TextView
-        android:id="@+id/resendCode"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="15dp"
-        android:gravity="center_horizontal"
-        android:onClick="resendOtp"
-        android:text="Resend OTP"
-        android:textColor="#3bafda"
-        android:textSize="16sp"
-        android:visibility="gone" />
+            <Button
+                android:id="@+id/bPhoneSubmit"
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="30dp"
+                android:background="#ed872d"
+                android:text="SUBMIT"
+                android:textColor="#e6e6e6" />
 
-    <android.support.v7.widget.CardView
-        android:id="@+id/cardViewVerifyText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="5dp"
-        android:visibility="visible">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="15dp"
-            android:fontFamily="sans-serif-smallcaps"
-            android:text="@string/login_message"
-            android:textSize="16sp" />
-    </android.support.v7.widget.CardView>
+        </LinearLayout>
 
-    <android.support.v7.widget.CardView
-        android:id="@+id/cardViewVerify"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="5dp"
-        android:visibility="visible">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_margin="10dp"
-            android:text="@string/verify_text"
-            android:textSize="17sp"
-            android:textStyle="bold" />
+    </LinearLayout>
 
-    </android.support.v7.widget.CardView>
 
-    <Spinner
-        android:id="@+id/spinner"
-        android:layout_width="200dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="20dp"
-        android:padding="15dp"
-        android:visibility="visible" />
-
-    <EditText
-        android:id="@+id/etphone"
-        android:layout_width="200dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="5dp"
-        android:gravity="center_horizontal"
-        android:hint="@string/phone_hint"
-        android:inputType="number"
-        android:visibility="visible" />
-
-    <Button
-        android:id="@+id/bPhoneSubmit"
-        android:layout_width="150dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="10dp"
-        android:onClick="login"
-        android:text="Verify"
-        android:visibility="visible" />
-</LinearLayout>
+</RelativeLayout>
