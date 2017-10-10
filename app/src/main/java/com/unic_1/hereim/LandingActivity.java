@@ -9,12 +9,16 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,32 +29,51 @@ import android.widget.Toast;
 
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.unic_1.hereim.Adapter.RequestAdapter;
 import com.unic_1.hereim.Constants.Constant;
 import com.unic_1.hereim.Model.LocationCoordinates;
 import com.unic_1.hereim.Model.Request;
+import com.unic_1.hereim.Model.UserRequestReference;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+
+//import android.support.v7.widget.ThemedSpinnerAdapter.Helper;
 
 public class LandingActivity extends AppCompatActivity {
 
+    ///
+    public static boolean isGPSEnabled = false;
+    public static boolean isNetworkEnabled = false;
+    static boolean canGetLocation = false;
+
+    private static final float MIN_DISTANCE_CHANGE_FOR_UPDATES = 1; // 2 meters
+    private static final long MIN_TIME_BW_UPDATES = 1000; // 1 sec
+///
+
+
+    private static Location location;
+    private final String TAG = "LANDING_ACTIVITY";
+    AlertDialog.Builder alertDialog;
     private LocationManager locationManager;
     private LocationListener locationListener;
-    private static Location location;
-
-    private final String TAG = "LANDING_ACTIVITY";
+    private int REQUEST_ID;
     private String number;
 
-    AlertDialog.Builder alertDialog;
-
-    /*Gets triggered when ask button is clicked*/
+    // Reads a number, send's request asking for location
     public void ask(View view) {
         // Dialogue pop's up
+        REQUEST_ID = 0;
         alertDialog.show();
     }
 
-    /*Gets triggered when answer button is clicked*/
+    // Reads a number, send's own location to the other number
     public void answer(View view) {
-        pushLocation();
+        REQUEST_ID = 1;
+        alertDialog.show();
+        //pushLocation();
     }
 
     @Override
@@ -63,8 +86,15 @@ public class LandingActivity extends AppCompatActivity {
         SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
         number = preferences.getString("number", "");
 
-        Log.i(TAG, "onCreate: "+number);
+        Log.i(TAG, "onCreate: " + number);
 
+        setupLocation();
+
+        initNotification();
+    }
+
+    // Sets up Location manager
+    private void setupLocation() {
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
         // Listens to the location
@@ -73,6 +103,7 @@ public class LandingActivity extends AppCompatActivity {
             public void onLocationChanged(Location location) {
                 // Updates the location variable to the latest location
                 LandingActivity.location = location;
+                Log.i(TAG, "onLocationChanged: " + location);
             }
 
             @Override
@@ -91,22 +122,128 @@ public class LandingActivity extends AppCompatActivity {
             }
         };
 
-        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-        } else {
-            // Sets the last known location as default value
-            location = locationManager.getLastKnownLocation(locationManager.GPS_PROVIDER);
+        // If build version is less than sdk 23
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            Log.i(TAG, "setupLocation: version<23");
+            if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                Log.i(TAG, "setupLocation: Location disabled");
+                showGPSDisabledAlertToUser();
+            }
+
+            {
+                // FIXME: 3/10/17 last known location is only retrived when you pinpoint yourself on google maps since previous locations are being erased when you reinstall the app
+
+///
+                isGPSEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+                isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+                if (!isGPSEnabled && !isNetworkEnabled) {
+                    Toast.makeText(getApplicationContext(), "No provider found!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Log.d(TAG, "setupLocation: enabled");
+                    if (isGPSEnabled) {
+                        if (location == null) {
+                            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+                                return;
+                            }
+                            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES, locationListener);
+                            Log.d("Network", "GPS");
+                            if (locationManager != null) {
+                                Log.d("locationManager", "is not null ");
+
+                                //*
+                                List<String> providers = locationManager.getProviders(true);
+                                Location bestLocation = null;
+                                for (String provider : providers) {
+                                    location = locationManager.getLastKnownLocation(provider);
+                                    if (location == null) {
+                                        continue;
+                                    }
+                                    break;
+                                }
+
+                                //*
+
+                                //location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                                if (location != null) {
+                                    Log.d("Network", "GPS lat and long gets ");
+                                    Toast.makeText(getApplicationContext(), "isNetworkEnabled!", Toast.LENGTH_SHORT).show();
+                                    double latitude = location.getLatitude();
+                                    double longitude = location.getLongitude();
+                                    Log.d(TAG, "setupLocation: " + latitude + ", " + longitude);
+
+                                /*Helper.savePreferences(getApplicationContext(), "LATITUDE",String.valueOf(latitude));
+                                Helper.savePreferences(getApplicationContext(), "LONGITUDE",String.valueOf(longitude));*/
+                                } else {
+                                    Log.d("location", "is getting null ");
+                                }
+                            }
+                        }
+                    } else if (isNetworkEnabled) {
+                        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES, locationListener);
+                        Log.d("Network", "Network");
+                        if (locationManager != null) {
+                            location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                            if (location != null) {
+                                //Toast.makeText(getApplicationContext(), "isGPSEnabled!", Toast.LENGTH_SHORT).show();
+                                double latitude = location.getLatitude();
+                                double longitude = location.getLongitude();
+                            /*Helper.savePreferences(getApplicationContext(), NameConversion.LATITUDE,String.valueOf(latitude));
+                            Helper.savePreferences(getApplicationContext(), NameConversion.LONGITUDE,String.valueOf(longitude));*/
+                            }
+                        }
+                    } else {
+                        Log.d(TAG, "setupLocation: Nothing enabled");
+                    }
+                }
+            }
+
+
+///
+
 
             // Requests for any change in location
-            locationManager.requestLocationUpdates(locationManager.GPS_PROVIDER, 0, 0, locationListener);
+           // locationManager.requestLocationUpdates(locationManager.GPS_PROVIDER, 0, 0, locationListener);
 
-            pushLocation();
+            // Sets the last known location as default value
+            //location = locationManager.getLastKnownLocation(locationManager.GPS_PROVIDER);
+        } else {
+
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+            } else {
+                Log.i(TAG, "setupLocation: version>23");
+
+                // Requests for any change in location
+                locationManager.requestLocationUpdates(locationManager.GPS_PROVIDER, 0, 0, locationListener);
+                // Sets the last known location as default value
+                location = locationManager.getLastKnownLocation(locationManager.GPS_PROVIDER);
+                //pushLocation();
+            }
         }
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
+    // Initialized notification
+    private void initNotification() {
+        try {
+            RecyclerView recyclerView = (RecyclerView) findViewById(R.id.notificationRecyclerView);
+
+            RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this);
+
+            SharedPreferences preferences = getSharedPreferences("user", MODE_PRIVATE);
+            ArrayList<String> requestList = new RequestThread().execute(preferences.getString("number", "")).get();
+            //ArrayList<Request> requestList = new RequestThread().execute(preferences.getString("number", "")).get();
+
+            Log.i(TAG, "initNotification: list length "+requestList.size());
+            //RecyclerView.Adapter adapter = new NotificationAdapter(requestList);
+
+            recyclerView.setLayoutManager(layoutManager);
+            //recyclerView.setAdapter(adapter);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -137,7 +274,6 @@ public class LandingActivity extends AppCompatActivity {
         // Checks if the permission is granted or not
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                location = locationManager.getLastKnownLocation(locationManager.GPS_PROVIDER);
                 locationManager.requestLocationUpdates(locationManager.GPS_PROVIDER, 0, 0, locationListener);
             }
         }
@@ -163,20 +299,48 @@ public class LandingActivity extends AppCompatActivity {
                     public void onClick(DialogInterface dialog, int which) {
                         Toast.makeText(LandingActivity.this, "Pushing", Toast.LENGTH_SHORT).show();
                         Log.d(TAG, "Dialog onClick: Pushing...");
-                        FirebaseDatabase database = FirebaseDatabase.getInstance();
-                        DatabaseReference reference = database.getReference("Request");
 
+                        FirebaseDatabase database = FirebaseDatabase.getInstance();
+                        // Creates unique id for every request
+                        DatabaseReference reference = database.getReference("Request").push();
+                        // Gets Users reference
+                        DatabaseReference userReference = database.getReference("Users");
                         long timestamp = new Date().getTime();
 
-                        // Creates a unique key to store the request
-                        DatabaseReference user1_ref = reference.child(number).push();
-                        Request req1 = new Request(Constant.Actions.REQUEST_SENT.value, timestamp, input.getText().toString());
-                        user1_ref.setValue(req1);
+                        DatabaseReference user1_ref = userReference.child(number).child("request_list").push();
+                        DatabaseReference user2_ref = userReference.child(input.getText().toString()).child("request_list").push();
 
-                        // Same unique key is used to store the request
-                        DatabaseReference user2_ref = reference.child(input.getText().toString()).child(user1_ref.getKey());
-                        Request req2 = new Request(Constant.Actions.REQUEST_RECEIVED.value, timestamp, number);
-                        user2_ref.setValue(req2);
+                        Request req = null;
+
+                        // Asking location
+                        if (REQUEST_ID == 0) {
+                            req = new Request(
+                                    timestamp,
+                                    input.getText().toString(),
+                                    number
+                            );
+
+                            // Updates the request list of user
+                            user1_ref.setValue(new UserRequestReference(Constant.Actions.REQUEST_SENT.value, reference.getKey()));
+                            user2_ref.setValue(new UserRequestReference(Constant.Actions.REQUEST_RECEIVED.value, reference.getKey()));
+                        }
+                        // Sending location
+                        else if (REQUEST_ID == 1) {
+                            req = new Request(
+                                    timestamp,
+                                    input.getText().toString(),
+                                    number,
+                                    new LocationCoordinates(
+                                            location.getLatitude(),
+                                            location.getLongitude()
+                                    )
+                            );
+
+                            // Updates the request list of user
+                            user1_ref.setValue(new UserRequestReference(Constant.Actions.LOCATION_SENT.value, reference.getKey()));
+                            user2_ref.setValue(new UserRequestReference(Constant.Actions.LOCATION_RECEIVED.value, reference.getKey()));
+                        }
+                        reference.setValue(req);
 
                         Log.d(TAG, "Dialog onClick: Completed");
                     }
@@ -190,6 +354,7 @@ public class LandingActivity extends AppCompatActivity {
                 });
     }
 
+    // Creates Location object and pushes to firebase
     public void pushLocation() {
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         DatabaseReference ref = database.getReference("Users").child(number);
@@ -197,12 +362,12 @@ public class LandingActivity extends AppCompatActivity {
         double lat = 0;
         double lon = 0;
         // If system finds last known location
-        if(location != null) {
+        if (location != null) {
             lat = LandingActivity.location.getLatitude();
             lon = LandingActivity.location.getLongitude();
         }
 
-        System.out.println("Latitude: "+lat+" Longitude: "+lon);
+        System.out.println("Latitude: " + lat + " Longitude: " + lon);
         Toast.makeText(this, "Clicked", Toast.LENGTH_SHORT).show();
 
         // Stores the coordinates in an object
@@ -210,4 +375,43 @@ public class LandingActivity extends AppCompatActivity {
 
         ref.setValue(locationCoordinates);
     }
+
+    // This is a separate thread which reads the data from firebase
+    private class RequestThread extends AsyncTask<String, Void, ArrayList<String>> {
+        @Override
+        protected ArrayList<String> doInBackground(String... params) {
+            Log.i(TAG, "doInBackground: call getData");
+            ArrayList<String> requestLists = new RequestAdapter().getDatas(params[0]);
+            Log.i(TAG, "doInBackground: list length "+requestLists.size());
+            return requestLists;
+        }
+    }
+
+
+    private void showGPSDisabledAlertToUser()
+    {
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        alertDialogBuilder.setMessage("GPS is disabled in your device. Would you like to enable it?")
+                .setCancelable(false)
+                .setPositiveButton("Settings", new DialogInterface.OnClickListener()
+                {
+                    public void onClick(DialogInterface dialog, int id)
+                    {
+                        Intent callGPSSettingIntent = new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                        startActivity(callGPSSettingIntent);
+
+                        //mapFrag.getMapAsync(LandingActivity.this);
+                    }
+                });
+        alertDialogBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener()
+        {
+            public void onClick(DialogInterface dialog, int id)
+            {
+                dialog.cancel();
+            }
+        });
+        AlertDialog alert = alertDialogBuilder.create();
+        alert.show();
+    }
+
 }

@@ -1,6 +1,8 @@
 package com.unic_1.hereim;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -10,7 +12,6 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -39,12 +40,21 @@ public class LoginActivity extends AppCompatActivity {
     private PhoneAuthProvider.ForceResendingToken mResendToken;
     private PhoneAuthProvider.OnVerificationStateChangedCallbacks mCallbacks;
 
+    private EditText phone;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
         /*getSupportActionBar().setTitle("Login");*/
+
+        SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
+        if(!TextUtils.isEmpty(preferences.getString("number", ""))) {
+            Intent i = new Intent(LoginActivity.this, LandingActivity.class);
+
+            startActivity(i);
+        }
 
         Spinner countrySpinner = (Spinner) findViewById(R.id.spinner);
         String[] list = {"India", "Nepal", "Bhutan", "Sri Lanka", "Bangladesh"};
@@ -64,6 +74,11 @@ public class LoginActivity extends AppCompatActivity {
                 //     detect the incoming verification SMS and perform verificaiton without
                 //     user action.
                 Log.d(TAG, "onVerificationCompleted:" + credential);
+
+                SharedPreferences preferences = getSharedPreferences("user", Context.MODE_APPEND);
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.putString("number", phone.getText().toString());
+                editor.apply();
 
                 Intent i = new Intent(LoginActivity.this, LandingActivity.class);
 
@@ -116,7 +131,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     public void login(View v) {
-        EditText phone = (EditText) findViewById(R.id.etphone);
+        phone = (EditText) findViewById(R.id.etphone);
 
         if (!TextUtils.isEmpty(phone.getText())) {
             PhoneAuthProvider.getInstance().verifyPhoneNumber(

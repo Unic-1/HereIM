@@ -14,9 +14,9 @@ public class Constant {
     public enum Actions {
         REQUEST_SENT(0),
         REQUEST_RECEIVED(1),
-        LOCATION_RECEIVED(2),
-        REQEUST_DECLINED(3),
-        LOCATION_SENT(4);
+        LOCATION_RECEIVED(3),
+        REQEUST_DECLINED(4),
+        LOCATION_SENT(2);
 
         public int value;
         private Actions(int value) {
