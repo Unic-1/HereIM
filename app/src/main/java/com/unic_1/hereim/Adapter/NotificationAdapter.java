@@ -85,18 +85,31 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             if (action == Constant.Actions.REQUEST_SENT) {
                 message = "Your reqeust has been sent";
                 senderORreceiver = req.getTo();
+                bSend.setVisibility(View.GONE);
+                bReject.setVisibility(View.GONE);
+                bView.setVisibility(View.GONE);
             } else if (action == Constant.Actions.REQUEST_RECEIVED) {
                 message = "You have received a request";
                 senderORreceiver = req.getFrom();
+                bView.setVisibility(View.GONE);
             } else if (action == Constant.Actions.LOCATION_SENT) {
                 message = "Your location has been sent";
                 senderORreceiver = req.getTo();
+                bSend.setVisibility(View.GONE);
+                bReject.setVisibility(View.GONE);
+                bView.setVisibility(View.GONE);
             } else if (action == Constant.Actions.LOCATION_RECEIVED) {
                 message = "You have received the location";
                 senderORreceiver = req.getFrom();
+                bSend.setVisibility(View.GONE);
+                bReject.setVisibility(View.GONE);
+                bView.setVisibility(View.VISIBLE);
             } else if (action == Constant.Actions.REQEUST_DECLINED) {
                 message = "Request is declined";
                 senderORreceiver = req.getTo();
+                bSend.setVisibility(View.GONE);
+                bReject.setVisibility(View.GONE);
+                bView.setVisibility(View.GONE);
             }
 
 
