@@ -16,14 +16,32 @@ import com.unic_1.hereim.Constants.Constant;
 
 
 public class Request {
-    private Constant.Actions action;
+    private Constant.Actions action;//Depricated
+    private UserRequestReference requestReference;
     public long timestamp;
     public String to;
     public String from;
     public LocationCoordinates location;
 
 
+    // While reading users data
+    public Request(UserRequestReference requestReference, long timestamp, String to, String from) {
+        this.requestReference = requestReference;
+        this.timestamp = timestamp;
+        this.to = to;
+        this.from = from;
+    }
 
+    // While reading users data
+    public Request(UserRequestReference requestReference, long timestamp, String to, String from, LocationCoordinates location) {
+        this.requestReference = requestReference;
+        this.timestamp = timestamp;
+        this.to = to;
+        this.from = from;
+        this.location = location;
+    }
+
+    @Deprecated
     public Request(Constant.Actions action, long timestamp, String to, String from) {
         this.action = action;
         this.timestamp = timestamp;
@@ -46,6 +64,7 @@ public class Request {
         this.location = location;
     }
 
+    @Deprecated
     public Request(Constant.Actions action, long timestamp, String to, String from, LocationCoordinates location) {
         this.action = action;
         this.timestamp = timestamp;
@@ -87,10 +106,10 @@ public class Request {
     }
 
     public Constant.Actions getAction() {
-        return action;
+        return requestReference.getAction();
     }
 
-    public void setAction(Constant.Actions action) {
-        this.action = action;
+    public String getRequestId() {
+        return requestReference.getRequest_reference();
     }
 }

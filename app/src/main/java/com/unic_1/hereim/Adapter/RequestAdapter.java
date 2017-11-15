@@ -10,6 +10,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.unic_1.hereim.Constants.Constant;
 import com.unic_1.hereim.Model.LocationCoordinates;
 import com.unic_1.hereim.Model.Request;
+import com.unic_1.hereim.Model.UserRequestReference;
 import com.unic_1.hereim.RequestInterface;
 
 import org.json.JSONException;
@@ -19,7 +20,7 @@ import java.util.ArrayList;
 
 /**
  * Created by unic-1 on 15/9/17.
- * <p>
+ *
  * This is the Adapter class for Request module which add, update and retrieve
  * the data from the Firebase.
  */
@@ -29,23 +30,29 @@ public class RequestAdapter implements RequestInterface {
     final String TAG = "REQUEST ADAPTER";
 
     @Override
-    public void addData(Request req, String to, String from) {
-        Log.i(TAG, "addData: Called");
+    public void addData(Request req, String to, String from, int requestId) {
         FirebaseDatabase database = FirebaseDatabase.getInstance();
-
-        // Creating a request and pushing it as Request child
+        // Creates unique id for every request
         DatabaseReference reference = database.getReference("Request").push();
+        // Gets Users reference
+        DatabaseReference userReference = database.getReference("Users");
+
+
+
+        DatabaseReference user1_ref = userReference.child(from).child("request_list").child(reference.getKey());
+        DatabaseReference user2_ref = userReference.child(to).child("request_list").child(reference.getKey());
+
+        if (requestId == 0) {
+            // Updates the request list of user
+            user1_ref.setValue(new UserRequestReference(Constant.Actions.REQUEST_SENT, reference.getKey()));
+            user2_ref.setValue(new UserRequestReference(Constant.Actions.REQUEST_RECEIVED, reference.getKey()));
+        } else if(requestId == 1) {
+            // Updates the request list of user
+            user1_ref.setValue(new UserRequestReference(Constant.Actions.LOCATION_SENT, reference.getKey()));
+            user2_ref.setValue(new UserRequestReference(Constant.Actions.LOCATION_RECEIVED, reference.getKey()));
+        }
+
         reference.setValue(req);
-        Log.i(TAG, "addData: Request pushed");
-
-        DatabaseReference reference1 = database.getReference("User");
-        DatabaseReference userto = reference1.child(to).child("Request").child(reference.getKey());
-        DatabaseReference userfrom = reference1.child(from).child("Request").child(reference.getKey());
-
-        // Pushing the request to sender and receiver with action value
-        userfrom.child("action").setValue(0); //Request sent
-        userto.child("action").setValue(1); // Request received
-        Log.i(TAG, "addData: Request pushed to both users with specific action value");
     }
 
 
@@ -149,32 +156,26 @@ public class RequestAdapter implements RequestInterface {
         Log.i(TAG, "updateRequest: Called");
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         if (action == Constant.Actions.LOCATION_SENT.value) {
+
             // Updating location in request of the request is sent
             DatabaseReference reference = database.getReference("Request").child(requestid).child("location");
             reference.setValue(locationCoordinates);
             Log.i(TAG, "updateRequest: Location Sent");
 
             // Updating user request status on both sender and receiver
-            database.getReference("User").child(to).child("Request").child(requestid).child("action").setValue(Constant.Actions.LOCATION_SENT.value);
-            database.getReference("User").child(from).child("Request").child(requestid).child("action").setValue(Constant.Actions.LOCATION_RECEIVED.value);
+            database.getReference("User").child(to).child("request_list").child(requestid).child("action").setValue(Constant.Actions.LOCATION_SENT.value);
+            database.getReference("User").child(from).child("request_list").child(requestid).child("action").setValue(Constant.Actions.LOCATION_RECEIVED.value);
             Log.i(TAG, "updateRequest: Updated status to both user");
+
         } else if (action == Constant.Actions.REQEUST_DECLINED.value) {
+
             Log.i(TAG, "updateRequest: Request Declined");
             // Updating user request status on both sender and receiver
-            database.getReference("User").child(to).child("Request").child(requestid).child("action").setValue(Constant.Actions.REQEUST_DECLINED.value);
-            database.getReference("User").child(from).child("Request").child(requestid).child("action").setValue(Constant.Actions.REQUEST_RECEIVED.value);
+            database.getReference("User").child(to).child("request_list").child(requestid).child("action").setValue(Constant.Actions.REQEUST_DECLINED.value);
+            database.getReference("User").child(from).child("request_list").child(requestid).child("action").setValue(Constant.Actions.REQUEST_RECEIVED.value);
             Log.i(TAG, "updateRequest: Updated status to both user");
+
         }
-    }
-
-    @Override
-    public void declineReqest(String requestId, String to, String from) {
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        DatabaseReference reference_to = database.getReference("User").child(to).child("request_list").child(requestId);
-        DatabaseReference reference_from = database.getReference("User").child(from).child("request_list").child(requestId);
-
-        reference_to.child("action").setValue(Constant.Actions.REQEUST_DECLINED.value);
-        reference_from.child("action").setValue(Constant.Actions.REQEUST_DECLINED.value);
     }
     
 }
