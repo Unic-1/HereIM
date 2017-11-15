@@ -22,8 +22,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.google.firebase.database.DataSnapshot;
@@ -41,21 +39,20 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 //import android.support.v7.widget.ThemedSpinnerAdapter.Helper;
 
 public class LandingActivity extends AppCompatActivity {
 
-    private static final float MIN_DISTANCE_CHANGE_FOR_UPDATES = 1; // 2 meters
+    private static final float MIN_DISTANCE_CHANGE_FOR_UPDATES = 1; // 1 meters
     private static final long MIN_TIME_BW_UPDATES = 1000; // 1 sec
     ///
     public static boolean isGPSEnabled = false;
     public static boolean isNetworkEnabled = false;
     static boolean canGetLocation = false;
     ///
-    private static Location location;
+    public static Location location;
     private final String TAG = "LANDING_ACTIVITY";
     AlertDialog.Builder alertDialog;
     private LocationManager locationManager;
@@ -68,13 +65,15 @@ public class LandingActivity extends AppCompatActivity {
     public void ask(View view) {
         // Dialogue pop's up
         REQUEST_ID = 0;
-        alertDialog.show();
+        createDialog();
+        alertDialog.create().show();
     }
 
     // Reads a number, send's own location to the other number
     public void answer(View view) {
         REQUEST_ID = 1;
-        alertDialog.show();
+        createDialog();
+        alertDialog.create().show();
         //pushLocation();
     }
 
@@ -82,7 +81,7 @@ public class LandingActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_landing);
-        createDialog();
+
 
         // Gets the users phone number
         SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
@@ -240,7 +239,7 @@ public class LandingActivity extends AppCompatActivity {
 
         final DatabaseReference requestReference = database.getReference("Request");
 
-        final RecyclerView.Adapter adapter = new NotificationAdapter(requestList);
+        final RecyclerView.Adapter adapter = new NotificationAdapter(requestList, this);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(adapter);
 
@@ -255,7 +254,7 @@ public class LandingActivity extends AppCompatActivity {
                     Log.i(TAG, "onDataChange: data: " + data.getValue());
                     try {
                         // Parsing the user request list using JSON object
-                        JSONObject object = new JSONObject(data.getValue().toString());
+                        final JSONObject object = new JSONObject(data.getValue().toString());
                         final int action = new Integer(object.get("action").toString());
 
                         // Referencing a particular request
@@ -269,6 +268,9 @@ public class LandingActivity extends AppCompatActivity {
                                     // Parsing request data using JSON object
                                     JSONObject requestData = new JSONObject(dataSnapshot.getValue().toString());
 
+                                    /*
+                                    * Before UserRequestReference was added to Request class as data member
+                                    * This code works fine
                                     if (action == Constant.Actions.REQUEST_SENT.value || action == Constant.Actions.REQUEST_RECEIVED.value) {
                                         Log.i(TAG, "onDataChange: Request Received/ Request Sent");
                                         requestList.add(
@@ -299,6 +301,55 @@ public class LandingActivity extends AppCompatActivity {
                                         requestList.add(
                                                 new Request(
                                                         Constant.Actions.REQEUST_DECLINED,
+                                                        requestData.getLong("timestamp"),
+                                                        requestData.getString("to"),
+                                                        requestData.getString("from")
+                                                )
+                                        );
+
+
+                                    }*/
+
+                                    // After adding UserRequestReference as data member in Request class
+                                    if (action == Constant.Actions.REQUEST_SENT.value || action == Constant.Actions.REQUEST_RECEIVED.value) {
+                                        Log.i(TAG, "onDataChange: Request Received/ Request Sent");
+                                        requestList.add(
+                                                new Request(
+                                                        new UserRequestReference(
+                                                                (action == Constant.Actions.REQUEST_SENT.value) ? Constant.Actions.REQUEST_SENT : Constant.Actions.REQUEST_RECEIVED,
+                                                                object.getString("request_reference")
+                                                        ),
+                                                        requestData.getLong("timestamp"),
+                                                        requestData.getString("to"),
+                                                        requestData.getString("from")
+                                                )
+                                        );
+                                    } else if (action == Constant.Actions.LOCATION_SENT.value || action == Constant.Actions.LOCATION_RECEIVED.value) {
+                                        JSONObject obj = new JSONObject(requestData.get("location").toString());
+                                        LocationCoordinates locationCoordinates = new LocationCoordinates(
+                                                obj.getDouble("latitude"),
+                                                obj.getDouble("longitude")
+                                        );
+
+                                        requestList.add(
+                                                new Request(
+                                                        new UserRequestReference(
+                                                                (action == Constant.Actions.LOCATION_SENT.value) ? Constant.Actions.LOCATION_SENT : Constant.Actions.LOCATION_RECEIVED,
+                                                                object.getString("request_reference")
+                                                        ),
+                                                        requestData.getLong("timestamp"),
+                                                        requestData.getString("to"),
+                                                        requestData.getString("from"),
+                                                        locationCoordinates
+                                                )
+                                        );
+                                    } else {
+                                        requestList.add(
+                                                new Request(
+                                                        new UserRequestReference(
+                                                                Constant.Actions.REQEUST_DECLINED,
+                                                                object.getString("request_reference")
+                                                        ),
                                                         requestData.getLong("timestamp"),
                                                         requestData.getString("to"),
                                                         requestData.getString("from")
@@ -397,7 +448,10 @@ public class LandingActivity extends AppCompatActivity {
     // Creating dialog to send location request to other person
     public void createDialog() {
         alertDialog = new AlertDialog.Builder(LandingActivity.this);
-        alertDialog.setTitle("Request");
+        View view = getLayoutInflater().inflate(R.layout.dialog_layout, null);
+        alertDialog.setView(view);
+
+        /*alertDialog.setTitle("Request");
         alertDialog.setMessage("Enter phone number:");
 
         final EditText input = new EditText(LandingActivity.this);
@@ -405,26 +459,19 @@ public class LandingActivity extends AppCompatActivity {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.MATCH_PARENT);
 
+        if(input.getParent() != null)
+            ((ViewGroup)input.getParent()).removeView(input);
         input.setLayoutParams(lp);
         alertDialog.setView(input);
-        alertDialog.setIcon(R.drawable.ic_menu_gallery);
+        alertDialog.setIcon(R.drawable.ic_menu_gallery);*/
 
-        alertDialog.setPositiveButton("Send Request",
+        /*alertDialog.setPositiveButton("Send Request",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
                         Toast.makeText(LandingActivity.this, "Pushing", Toast.LENGTH_SHORT).show();
                         Log.d(TAG, "Dialog onClick: Pushing...");
 
-                        FirebaseDatabase database = FirebaseDatabase.getInstance();
-                        // Creates unique id for every request
-                        DatabaseReference reference = database.getReference("Request").push();
-                        // Gets Users reference
-                        DatabaseReference userReference = database.getReference("Users");
                         long timestamp = new Date().getTime();
-
-                        DatabaseReference user1_ref = userReference.child(number).child("request_list").push();
-                        DatabaseReference user2_ref = userReference.child(input.getText().toString()).child("request_list").push();
-
                         Request req = null;
 
                         // Asking location
@@ -434,10 +481,6 @@ public class LandingActivity extends AppCompatActivity {
                                     input.getText().toString(),
                                     number
                             );
-
-                            // Updates the request list of user
-                            user1_ref.setValue(new UserRequestReference(Constant.Actions.REQUEST_SENT.value, reference.getKey()));
-                            user2_ref.setValue(new UserRequestReference(Constant.Actions.REQUEST_RECEIVED.value, reference.getKey()));
                         }
                         // Sending location
                         else if (REQUEST_ID == 1) {
@@ -450,13 +493,9 @@ public class LandingActivity extends AppCompatActivity {
                                             location.getLongitude()
                                     )
                             );
-
-                            // Updates the request list of user
-                            user1_ref.setValue(new UserRequestReference(Constant.Actions.LOCATION_SENT.value, reference.getKey()));
-                            user2_ref.setValue(new UserRequestReference(Constant.Actions.LOCATION_RECEIVED.value, reference.getKey()));
                         }
-                        reference.setValue(req);
 
+                        new RequestAdapter().addData(req, input.getText().toString(), number, REQUEST_ID);
                         Log.d(TAG, "Dialog onClick: Completed");
                     }
                 });
@@ -466,7 +505,7 @@ public class LandingActivity extends AppCompatActivity {
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.cancel();
                     }
-                });
+                });*/
     }
 
     // Creates Location object and pushes to firebase

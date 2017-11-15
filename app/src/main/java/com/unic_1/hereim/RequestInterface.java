@@ -10,8 +10,7 @@ import java.util.ArrayList;
  */
 
 public interface RequestInterface {
-    public void addData(Request req, String to, String from);
+    public void addData(Request req, String to, String from, int requestId);
     public ArrayList<Request> getData(String number);
     public void updateRequest(String to, String from, String requestid, int action, LocationCoordinates locationCoordinates);
-    public void declineReqest(String requestId, String to, String from);
 }

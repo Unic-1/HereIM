@@ -130,7 +130,7 @@ public class NotificationActivity extends AppCompatActivity {
 
 
 
-            final RecyclerView.Adapter adapter = new NotificationAdapter(requestList);
+            final RecyclerView.Adapter adapter = new NotificationAdapter(requestList, this);
 
             recyclerView.setLayoutManager(layoutManager);
 
