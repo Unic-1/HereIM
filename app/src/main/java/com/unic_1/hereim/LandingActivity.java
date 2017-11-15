@@ -16,8 +16,10 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.Layout;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -88,6 +90,7 @@ public class LandingActivity extends AppCompatActivity {
         number = preferences.getString("number", "");
 
         Log.i(TAG, "onCreate: " + number);
+       // DividerItemDecoration itemDecoration=new DividerItemDecoration(this, RecyclerView.LayoutManager)
 
         setupLocation();
 
