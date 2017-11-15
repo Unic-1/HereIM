@@ -1,7 +1,9 @@
 package com.unic_1.hereim;
 
+import android.content.Intent;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -14,6 +16,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
 
+    public double latitude, longitude;
+
+    public static String TAG = "MAPSACTIVITY";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -22,6 +28,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        latitude = longitude = 1;
+
+        /*Intent i = getIntent();
+        Bundle data = i.getExtras();
+
+        latitude = data.getDouble("latitude");
+        longitude = data.getDouble("longitude");*/
+        latitude = 12.7566971;
+        longitude = 77.7030199;
+        Log.i(TAG, "latitude: "+latitude+", longitude: "+longitude);
     }
 
 
@@ -38,8 +55,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
+        Intent i = getIntent();
+        Bundle data = i.getExtras();
+
+        /*latitude = data.getDouble("latitude");
+        longitude = data.getDouble("longitude");*/
+        latitude = 12.7566971;
+        longitude = 77.7030199;
+        Log.i(TAG, "latitude: "+latitude+", longitude: "+longitude);
+
         // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
+        LatLng sydney = new LatLng(latitude, longitude);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
     }

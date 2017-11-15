@@ -12,4 +12,9 @@
 
     <string name="action_settings">Settings</string>
     <string name="title_activity_maps">Map</string>
+    <string name="login_message">We will send your one time message to verify your phone number. Carrier SMS charges will be applied</string>
+    <string name="verify_text">Verify your phone number:</string>
+    <string name="phone_hint">Enter Phone number</string>
+    <string name="phone_no">Phone No.</string>
+    <string name="enter_number">Enter number:</string>
 </resources>

@@ -1,10 +1,5 @@
-package com.unic_1.hereim;
+package com.unic_1.hereim.Adapter;
 
-import android.content.SharedPreferences;
-import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 
 import com.google.firebase.database.DataSnapshot;
@@ -12,37 +7,63 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.unic_1.hereim.Adapter.NotificationAdapter;
 import com.unic_1.hereim.Constants.Constant;
 import com.unic_1.hereim.Model.LocationCoordinates;
 import com.unic_1.hereim.Model.Request;
+import com.unic_1.hereim.Model.UserRequestReference;
+import com.unic_1.hereim.RequestInterface;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 
-public class NotificationActivity extends AppCompatActivity {
+/**
+ * Created by unic-1 on 15/9/17.
+ *
+ * This is the Adapter class for Request module which add, update and retrieve
+ * the data from the Firebase.
+ */
 
-    private static final String TAG = "NOTIFICATION ACTIVITY";
-    int count = 0;
+public class RequestAdapter implements RequestInterface {
+
+    final String TAG = "REQUEST ADAPTER";
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_notification);
+    public void addData(Request req, String to, String from, int requestId) {
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        // Creates unique id for every request
+        DatabaseReference reference = database.getReference("Request").push();
+        // Gets Users reference
+        DatabaseReference userReference = database.getReference("Users");
 
 
-            RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
 
-            RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this);
+        DatabaseReference user1_ref = userReference.child(from).child("request_list").child(reference.getKey());
+        DatabaseReference user2_ref = userReference.child(to).child("request_list").child(reference.getKey());
 
-            SharedPreferences preferences = getSharedPreferences("user", MODE_PRIVATE);
+        if (requestId == 0) {
+            // Updates the request list of user
+            user1_ref.setValue(new UserRequestReference(Constant.Actions.REQUEST_SENT, reference.getKey()));
+            user2_ref.setValue(new UserRequestReference(Constant.Actions.REQUEST_RECEIVED, reference.getKey()));
+        } else if(requestId == 1) {
+            // Updates the request list of user
+            user1_ref.setValue(new UserRequestReference(Constant.Actions.LOCATION_SENT, reference.getKey()));
+            user2_ref.setValue(new UserRequestReference(Constant.Actions.LOCATION_RECEIVED, reference.getKey()));
+        }
 
+        reference.setValue(req);
+    }
+
+
+    // FIXME: 4/10/17 Since firebase is itself running on a different thread there is no need of AsyncTask
+    @Override
+    public ArrayList<Request> getData(String number) {
+        Log.i(TAG, "getData: Called");
         final ArrayList<Request> requestList = new ArrayList<>();
 
         final FirebaseDatabase database = FirebaseDatabase.getInstance();
-        final DatabaseReference reference = database.getReference("Users").child(preferences.getString("number", "")).child("request_list");
+        final DatabaseReference reference = database.getReference("Users").child(number).child("request_list");
 
         final DatabaseReference requestReference = database.getReference("Request");
 
@@ -116,7 +137,6 @@ public class NotificationActivity extends AppCompatActivity {
                             e.printStackTrace();
                         }
                         //requestList.notifyAll();
-                        requestList.notify();
                     }
                     Log.i(TAG, "onDataChange: for ended");
                 }
@@ -127,30 +147,35 @@ public class NotificationActivity extends AppCompatActivity {
                 }
             });
         }
-
-
-
-            final RecyclerView.Adapter adapter = new NotificationAdapter(requestList, this);
-
-            recyclerView.setLayoutManager(layoutManager);
-
-
-
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                if(requestList.size()> count) {
-                    adapter.notifyDataSetChanged();
-                }
-            }
-        });
-            recyclerView.setAdapter(adapter);
-
-
+        Log.i(TAG, "getData: list length "+requestList.size());
+        return requestList;
     }
+
+    @Override
+    public void updateRequest(String to, String from, String requestid, int action, LocationCoordinates locationCoordinates) {
+        Log.i(TAG, "updateRequest: Called");
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        if (action == Constant.Actions.LOCATION_SENT.value) {
+
+            // Updating location in request of the request is sent
+            DatabaseReference reference = database.getReference("Request").child(requestid).child("location");
+            reference.setValue(locationCoordinates);
+            Log.i(TAG, "updateRequest: Location Sent");
+
+            // Updating user request status on both sender and receiver
+            database.getReference("User").child(to).child("request_list").child(requestid).child("action").setValue(Constant.Actions.LOCATION_SENT.value);
+            database.getReference("User").child(from).child("request_list").child(requestid).child("action").setValue(Constant.Actions.LOCATION_RECEIVED.value);
+            Log.i(TAG, "updateRequest: Updated status to both user");
+
+        } else if (action == Constant.Actions.REQEUST_DECLINED.value) {
+
+            Log.i(TAG, "updateRequest: Request Declined");
+            // Updating user request status on both sender and receiver
+            database.getReference("User").child(to).child("request_list").child(requestid).child("action").setValue(Constant.Actions.REQEUST_DECLINED.value);
+            database.getReference("User").child(from).child("request_list").child(requestid).child("action").setValue(Constant.Actions.REQUEST_RECEIVED.value);
+            Log.i(TAG, "updateRequest: Updated status to both user");
+
+        }
+    }
+    
 }
