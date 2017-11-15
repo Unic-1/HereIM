@@ -85,7 +85,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_marginTop="30dp"
-                android:background="#ed872d"
+                android:background="@drawable/bottonstyle"
                 android:onClick="login"
                 android:text="SUBMIT"
                 android:textColor="#e6e6e6" />

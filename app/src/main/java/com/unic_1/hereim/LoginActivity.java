@@ -50,6 +50,9 @@ public class LoginActivity extends AppCompatActivity {
         /*getSupportActionBar().setTitle("Login");*/
 
         SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
+        SharedPreferences.Editor edit=preferences.edit();
+        edit.putString("number","9647884306");
+        edit.apply();
         if(!TextUtils.isEmpty(preferences.getString("number", ""))) {
             Intent i = new Intent(LoginActivity.this, LandingActivity.class);
 

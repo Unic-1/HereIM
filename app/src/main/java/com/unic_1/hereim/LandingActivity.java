@@ -16,8 +16,10 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.Layout;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -47,7 +49,6 @@ import java.util.List;
 //import android.support.v7.widget.ThemedSpinnerAdapter.Helper;
 
 public class LandingActivity extends AppCompatActivity {
-
     private static final float MIN_DISTANCE_CHANGE_FOR_UPDATES = 1; // 2 meters
     private static final long MIN_TIME_BW_UPDATES = 1000; // 1 sec
     ///
@@ -89,6 +90,7 @@ public class LandingActivity extends AppCompatActivity {
         number = preferences.getString("number", "");
 
         Log.i(TAG, "onCreate: " + number);
+       // DividerItemDecoration itemDecoration=new DividerItemDecoration(this, RecyclerView.LayoutManager)
 
         setupLocation();
 
