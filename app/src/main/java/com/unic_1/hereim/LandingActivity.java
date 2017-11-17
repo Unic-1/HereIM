@@ -1,6 +1,7 @@
 package com.unic_1.hereim;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -16,22 +17,22 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.Layout;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.unic_1.hereim.Adapter.NotificationAdapter;
+import com.unic_1.hereim.Adapter.RequestAdapter;
 import com.unic_1.hereim.Constants.Constant;
 import com.unic_1.hereim.Model.LocationCoordinates;
 import com.unic_1.hereim.Model.Request;
@@ -41,63 +42,133 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 //import android.support.v7.widget.ThemedSpinnerAdapter.Helper;
 
 public class LandingActivity extends AppCompatActivity {
 
-    private static final float MIN_DISTANCE_CHANGE_FOR_UPDATES = 1; // 1 meters
-    private static final long MIN_TIME_BW_UPDATES = 1000; // 1 sec
-    ///
-    public static boolean isGPSEnabled = false;
-    public static boolean isNetworkEnabled = false;
-    static boolean canGetLocation = false;
     ///
     public static Location location;
+    private static String sNumber;
+    private final int STATUS_INQUIRE_LOCATION = 0;
+    private final int STATUS_SEND_LOCATION = 1;
+    private final float MIN_DISTANCE_CHANGE_FOR_UPDATES = 1; // 1 meters
+    private final long MIN_TIME_BW_UPDATES = 1000; // 1 sec
     private final String TAG = "LANDING_ACTIVITY";
-    AlertDialog.Builder alertDialog;
+    private int alertStatus;
+    ///
+    private boolean isGPSEnabled = false;
+    private boolean isNetworkEnabled = false;
+    private AlertDialog.Builder alertDialogBuilder;
+    private AlertDialog alertDialog;
     private LocationManager locationManager;
     private LocationListener locationListener;
-    private int REQUEST_ID;
-    private String number;
-    private int count = 0;
-
-    // Reads a number, send's request asking for location
-    public void ask(View view) {
-        // Dialogue pop's up
-        REQUEST_ID = 0;
-        createDialog();
-        alertDialog.create().show();
-    }
-
-    // Reads a number, send's own location to the other number
-    public void answer(View view) {
-        REQUEST_ID = 1;
-        createDialog();
-        alertDialog.create().show();
-        //pushLocation();
-    }
+    private ProgressDialog mProgressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_landing);
 
-
+        mProgressDialog = new ProgressDialog(LandingActivity.this);
+        mProgressDialog.setMessage("Loading...");
+        mProgressDialog.setCancelable(false);
+        mProgressDialog.show();
         // Gets the users phone number
         SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
-        number = preferences.getString("number", "");
+        sNumber = preferences.getString("number", "");
 
-        Log.i(TAG, "onCreate: " + number);
-       // DividerItemDecoration itemDecoration=new DividerItemDecoration(this, RecyclerView.LayoutManager)
+        Log.i(TAG, "logged in with " + sNumber);
 
-        setupLocation();
+        settingUpLocation();
 
-        initNotification();
+        initializeNotification();
     }
 
-    // Sets up Location manager
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        // Checks if the permission is granted or not
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                locationManager.requestLocationUpdates(locationManager.GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES, locationListener);
+                Toast.makeText(LandingActivity.this, "Location request granted", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    // Reads a number, send's request asking for location
+    public void askLocation(View view) {
+        alertStatus = STATUS_INQUIRE_LOCATION;
+        createDialog();
+    }
+
+    // Reads a number, send's own location to the other number
+    public void sendLocation(View view) {
+        alertStatus = STATUS_SEND_LOCATION;
+        createDialog();
+    }
+
+    // Creating dialog to send location request to other person
+    public void createDialog() {
+        alertDialogBuilder = new AlertDialog.Builder(LandingActivity.this);
+        View view = getLayoutInflater().inflate(R.layout.dialog_layout, null);
+        final EditText sendNumber = (EditText) view.findViewById(R.id.etSendNumber);
+        Button bSend = (Button) view.findViewById(R.id.bSendDialog);
+        Button bCancel = (Button) view.findViewById(R.id.bCancelDialog);
+
+        bSend.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "Pushing location...");
+
+                long timestamp = new Date().getTime();
+                Request req = null;
+
+                // Asking location
+                if (alertStatus == STATUS_INQUIRE_LOCATION) {
+                    req = new Request(
+                            timestamp,
+                            sNumber,
+                            sendNumber.getText().toString()
+                    );
+                }
+                // Sending location
+                else if (alertStatus == STATUS_SEND_LOCATION) {
+                    req = new Request(
+                            timestamp,
+                            sNumber,
+                            sendNumber.getText().toString(),
+                            new LocationCoordinates(
+                                    location.getLatitude(),
+                                    location.getLongitude()
+                            )
+                    );
+                }
+
+                new RequestAdapter().addData(req, sendNumber.getText().toString(), sNumber, alertStatus);
+                Log.d(TAG, "Dialog onClick: Completed");
+                alertDialog.cancel();
+            }
+        });
+
+        bCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                alertDialog.cancel();
+            }
+        });
+
+        alertDialogBuilder.setView(view);
+        alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
+    }
+
+    // TODO: 17/11/17 Learn from this method
+    @Deprecated
     private void setupLocation() {
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
@@ -146,9 +217,9 @@ public class LandingActivity extends AppCompatActivity {
                     Log.d(TAG, "setupLocation: enabled");
                     if (isGPSEnabled) {
                         if (location == null) {
-                            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-                                return;
+                            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                //ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+                                //return;
                             }
                             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES, locationListener);
                             Log.d("Network", "GPS");
@@ -227,27 +298,82 @@ public class LandingActivity extends AppCompatActivity {
         }
     }
 
-    // Initialized notification
+    // Sets up Location manager
+    private void settingUpLocation() {
+        locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+
+        // Listens to the location
+        locationListener = new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+                // Updates the location variable to the latest location
+                LandingActivity.location = location;
+                Log.i(TAG, "onLocationChanged: " + location);
+            }
+
+            @Override
+            public void onStatusChanged(String s, int i, Bundle bundle) {
+
+            }
+
+            @Override
+            public void onProviderEnabled(String s) {
+
+            }
+
+            @Override
+            public void onProviderDisabled(String s) {
+
+            }
+        };
+
+        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            Log.i(TAG, "setupLocation: Location disabled");
+            showGPSDisabledAlertToUser();
+        } else {
+            // FIXME: 3/10/17 last known location is only retrived when you pinpoint yourself on google maps since previous locations are being erased when you reinstall the app
+
+///
+            isGPSEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+            if (!isGPSEnabled && !isNetworkEnabled) {
+                Toast.makeText(getApplicationContext(), "No provider found!", Toast.LENGTH_SHORT).show();
+            } else {
+                Log.d(TAG, "setupLocation: enabled");
+                if (isGPSEnabled) {
+                    // If build version is less than sdk 23
+                    if (Build.VERSION.SDK_INT < 23) {
+                        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES, locationListener);
+                    } else {
+                        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+                        } else {
+                            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES, locationListener);
+
+                            Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    @Deprecated
     private void initNotification() {
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.notificationRecyclerView);
-
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this);
-
-        SharedPreferences preferences = getSharedPreferences("user", MODE_PRIVATE);
 
         final ArrayList<Request> requestList = new ArrayList<>();
 
         final FirebaseDatabase database = FirebaseDatabase.getInstance();
-        final DatabaseReference reference = database.getReference("Users").child(preferences.getString("number", "")).child("request_list");
+        final DatabaseReference reference = database.getReference("Users").child(sNumber).child("request_list");
 
         final DatabaseReference requestReference = database.getReference("Request");
 
         final RecyclerView.Adapter adapter = new NotificationAdapter(requestList, this);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(adapter);
-
-
-
 
         reference.addValueEventListener(new ValueEventListener() {
             @Override
@@ -319,7 +445,7 @@ public class LandingActivity extends AppCompatActivity {
                                         requestList.add(
                                                 new Request(
                                                         new UserRequestReference(
-                                                                (action == Constant.Actions.REQUEST_SENT.value) ? Constant.Actions.REQUEST_SENT : Constant.Actions.REQUEST_RECEIVED,
+                                                                (action == Constant.Actions.REQUEST_SENT.value) ? Constant.Actions.REQUEST_SENT.value : Constant.Actions.REQUEST_RECEIVED.value,
                                                                 object.getString("request_reference")
                                                         ),
                                                         requestData.getLong("timestamp"),
@@ -337,7 +463,7 @@ public class LandingActivity extends AppCompatActivity {
                                         requestList.add(
                                                 new Request(
                                                         new UserRequestReference(
-                                                                (action == Constant.Actions.LOCATION_SENT.value) ? Constant.Actions.LOCATION_SENT : Constant.Actions.LOCATION_RECEIVED,
+                                                                (action == Constant.Actions.LOCATION_SENT.value) ? Constant.Actions.LOCATION_SENT.value : Constant.Actions.LOCATION_RECEIVED.value,
                                                                 object.getString("request_reference")
                                                         ),
                                                         requestData.getLong("timestamp"),
@@ -350,7 +476,7 @@ public class LandingActivity extends AppCompatActivity {
                                         requestList.add(
                                                 new Request(
                                                         new UserRequestReference(
-                                                                Constant.Actions.REQEUST_DECLINED,
+                                                                Constant.Actions.REQEUST_DECLINED.value,
                                                                 object.getString("request_reference")
                                                         ),
                                                         requestData.getLong("timestamp"),
@@ -389,150 +515,135 @@ public class LandingActivity extends AppCompatActivity {
             }
         });
 
-
-        //ArrayList<String> requestList = new RequestThread().execute(preferences.getString("number", "")).get();
-        //ArrayList<Request> requestList = new RequestThread().execute(preferences.getString("number", "")).get();
-
         Log.i(TAG, "initNotification: list length " + requestList.size());
+    }
 
-        /*final Handler handler = new Handler();
-        final Runnable task = new Runnable() {
+    // Initialized notification
+    private void initializeNotification() {
+        RecyclerView recyclerView = (RecyclerView) findViewById(R.id.notificationRecyclerView);
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this);
+
+        final ArrayList<Request> requestList = new ArrayList<>();
+
+        final FirebaseDatabase database = FirebaseDatabase.getInstance();
+        final DatabaseReference reference = database.getReference("Users").child(sNumber).child("request_list");
+
+        final DatabaseReference requestReference = database.getReference("Request");
+
+        final RecyclerView.Adapter adapter = new NotificationAdapter(requestList, this);
+        recyclerView.setLayoutManager(layoutManager);
+        recyclerView.setAdapter(adapter);
+
+
+        reference.addChildEventListener(new ChildEventListener() {
             @Override
-            public void run() {
-                //code you want to run every second
-                //Log.i(TAG, "run: "+requestList.size());
-                if (requestList.size() > count) {
-                    adapter.notifyDataSetChanged();
-                    count = requestList.size();
-                }
-                if (true) {
-                    handler.postDelayed(this, 1000);
-                }
-            }
-        };
-        handler.postDelayed(task, 1000);*/
+            public void onChildAdded(final DataSnapshot dataSnapshot, String s) {
+                Log.i(TAG, "onChildAdded: " + dataSnapshot + ":" + dataSnapshot.child("request_reference").getValue().toString() + " : " + dataSnapshot.child("action").getValue().toString());
+                // Parsing the user request list using JSON object
+                final int action = new Integer(dataSnapshot.child("action").getValue().toString());
+                // Referencing a particular request
+                final DatabaseReference request = requestReference.child(dataSnapshot.child("request_reference").getValue().toString());
+                request.addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot1) {
+                        Log.i(TAG, "onDataChange: request");
+                        try {
+                            Log.i(TAG, "onDataChange: request: " + dataSnapshot1.getValue());
+                            // Parsing request data using JSON object
+                            JSONObject requestData = new JSONObject(dataSnapshot1.getValue().toString());
+
+                            // After adding UserRequestReference as data member in Request class
+                            if (action == Constant.Actions.REQUEST_SENT.value || action == Constant.Actions.REQUEST_RECEIVED.value) {
+                                Log.i(TAG, "onDataChange: Request Received/ Request Sent");
+                                requestList.add(
+                                        new Request(
+                                                new UserRequestReference(
+                                                        (action == Constant.Actions.REQUEST_SENT.value) ? Constant.Actions.REQUEST_SENT.value : Constant.Actions.REQUEST_RECEIVED.value,
+                                                        dataSnapshot.child("request_reference").getValue().toString()
+                                                ),
+                                                requestData.getLong("timestamp"),
+                                                requestData.getString("to"),
+                                                requestData.getString("from")
+                                        )
+                                );
+                            } else if (action == Constant.Actions.LOCATION_SENT.value || action == Constant.Actions.LOCATION_RECEIVED.value) {
+                                JSONObject obj = new JSONObject(requestData.get("location").toString());
+                                LocationCoordinates locationCoordinates = new LocationCoordinates(
+                                        obj.getDouble("latitude"),
+                                        obj.getDouble("longitude")
+                                );
+
+                                requestList.add(
+                                        new Request(
+                                                new UserRequestReference(
+                                                        (action == Constant.Actions.LOCATION_SENT.value) ? Constant.Actions.LOCATION_SENT.value : Constant.Actions.LOCATION_RECEIVED.value,
+                                                        dataSnapshot.child("request_reference").getValue().toString()
+                                                ),
+                                                requestData.getLong("timestamp"),
+                                                requestData.getString("to"),
+                                                requestData.getString("from"),
+                                                locationCoordinates
+                                        )
+                                );
+                            } else {
+                                requestList.add(
+                                        new Request(
+                                                new UserRequestReference(
+                                                        Constant.Actions.REQEUST_DECLINED.value,
+                                                        dataSnapshot.child("request_reference").getValue().toString()
+                                                ),
+                                                requestData.getLong("timestamp"),
+                                                requestData.getString("to"),
+                                                requestData.getString("from")
+                                        )
+                                );
 
 
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main, menu);
-
-        return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.Notification) {
-            Intent i = new Intent(this, NotificationActivity.class);
-
-            startActivity(i);
-        } else if (item.getItemId() == R.id.map) {
-            Intent i = new Intent(this, MapsActivity.class);
-
-            startActivity(i);
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        // Checks if the permission is granted or not
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                locationManager.requestLocationUpdates(locationManager.GPS_PROVIDER, 0, 0, locationListener);
-            }
-        }
-    }
-
-    // Creating dialog to send location request to other person
-    public void createDialog() {
-        alertDialog = new AlertDialog.Builder(LandingActivity.this);
-        View view = getLayoutInflater().inflate(R.layout.dialog_layout, null);
-        alertDialog.setView(view);
-
-        /*alertDialog.setTitle("Request");
-        alertDialog.setMessage("Enter phone number:");
-
-        final EditText input = new EditText(LandingActivity.this);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT);
-
-        if(input.getParent() != null)
-            ((ViewGroup)input.getParent()).removeView(input);
-        input.setLayoutParams(lp);
-        alertDialog.setView(input);
-        alertDialog.setIcon(R.drawable.ic_menu_gallery);*/
-
-        /*alertDialog.setPositiveButton("Send Request",
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        Toast.makeText(LandingActivity.this, "Pushing", Toast.LENGTH_SHORT).show();
-                        Log.d(TAG, "Dialog onClick: Pushing...");
-
-                        long timestamp = new Date().getTime();
-                        Request req = null;
-
-                        // Asking location
-                        if (REQUEST_ID == 0) {
-                            req = new Request(
-                                    timestamp,
-                                    input.getText().toString(),
-                                    number
-                            );
+                            }
+                            Log.i(TAG, "list size: "+requestList.size());
+                            if(mProgressDialog.isShowing()) {
+                                mProgressDialog.hide();
+                            }
+                            adapter.notifyDataSetChanged();
+                        } catch (JSONException e) {
+                            e.printStackTrace();
                         }
-                        // Sending location
-                        else if (REQUEST_ID == 1) {
-                            req = new Request(
-                                    timestamp,
-                                    input.getText().toString(),
-                                    number,
-                                    new LocationCoordinates(
-                                            location.getLatitude(),
-                                            location.getLongitude()
-                                    )
-                            );
-                        }
+                        Log.i(TAG, "onDataChange: data received");
+                    }
 
-                        new RequestAdapter().addData(req, input.getText().toString(), number, REQUEST_ID);
-                        Log.d(TAG, "Dialog onClick: Completed");
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+
                     }
                 });
+            }
 
-        alertDialog.setNegativeButton("Cancel",
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.cancel();
-                    }
-                });*/
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                Log.i(TAG, "onChildChanged: ");
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+                Log.i(TAG, "onChildRemoved: ");
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+                Log.i(TAG, "onChildMoved: ");
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.i(TAG, "onCancelled: ");
+            }
+        });
+
+        Log.i(TAG, "initNotification: list length " + requestList.size());
     }
 
-    // Creates Location object and pushes to firebase
-    public void pushLocation() {
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        DatabaseReference ref = database.getReference("Users").child(number);
-
-        double lat = 0;
-        double lon = 0;
-        // If system finds last known location
-        if (location != null) {
-            lat = LandingActivity.location.getLatitude();
-            lon = LandingActivity.location.getLongitude();
-        }
-
-        System.out.println("Latitude: " + lat + " Longitude: " + lon);
-        Toast.makeText(this, "Clicked", Toast.LENGTH_SHORT).show();
-
-        // Stores the coordinates in an object
-        LocationCoordinates locationCoordinates = new LocationCoordinates(lat, lon);
-
-        ref.setValue(locationCoordinates);
-    }
-
+    // GPS Disabled alert
     private void showGPSDisabledAlertToUser() {
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
         alertDialogBuilder.setMessage("GPS is disabled in your device. Would you like to enable it?")
@@ -541,6 +652,7 @@ public class LandingActivity extends AppCompatActivity {
                     public void onClick(DialogInterface dialog, int id) {
                         Intent callGPSSettingIntent = new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
                         startActivity(callGPSSettingIntent);
+                        //Settings.ACTION_NETWORK_OPERATOR_SETTINGS
 
                         //mapFrag.getMapAsync(LandingActivity.this);
                     }

@@ -1,25 +1,23 @@
 package com.unic_1.hereim.Model;
 
-import com.unic_1.hereim.Constants.Constant;
-
 /**
  * Created by unic-1 on 15/9/17.
  */
 
 public class UserRequestReference {
-    public Constant.Actions action;
+    public int action;
     public String request_reference;
 
-    public UserRequestReference(Constant.Actions action, String request_reference) {
+    public UserRequestReference(int action, String request_reference) {
         this.action = action;
         this.request_reference = request_reference;
     }
 
-    public Constant.Actions getAction() {
+    public int getAction() {
         return action;
     }
 
-    public void setAction(Constant.Actions action) {
+    public void setAction(int action) {
         this.action = action;
     }
 

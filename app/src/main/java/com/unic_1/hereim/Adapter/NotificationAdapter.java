@@ -27,7 +27,9 @@ import static android.content.ContentValues.TAG;
  * Created by unic-1 on 25/8/17.
  */
 
+
 public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapter.NotificationViewHolder> {
+    private static int countPosition = 0;
     ArrayList<Request> notificationList;
     Context context;
 
@@ -50,6 +52,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
     @Override
     public int getItemCount() {
+        Log.i(TAG, "getItemCount: " + notificationList.size());
         return notificationList.size();
     }
 
@@ -71,11 +74,11 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             bSend = (Button) itemView.findViewById(R.id.bSend);
             bReject = (Button) itemView.findViewById(R.id.bReject);
             bView = (Button) itemView.findViewById(R.id.bView);
-            
+
             bView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Log.i(TAG, "onClick: View clicked with position "+pos);
+                    Log.i(TAG, "onClick: View clicked with position " + pos);
                     Request req1 = notificationList.get(pos);
                     Intent i = new Intent(context, MapsActivity.class);
 
@@ -106,7 +109,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                     new RequestAdapter().updateRequest(
                             req.getFrom(),
                             req.getTo(),
-                            req.getRequestId(),
+                            req.getUserRequestReference().getRequest_reference(),
                             Constant.Actions.LOCATION_SENT.value,
                             new LocationCoordinates(
                                     LandingActivity.location.getLatitude(),
@@ -130,7 +133,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                     new RequestAdapter().updateRequest(
                             req.getFrom(),
                             req.getTo(),
-                            req.getRequestId(),
+                            req.getUserRequestReference().getRequest_reference(),
                             Constant.Actions.REQEUST_DECLINED.value,
                             null
                     );
@@ -156,34 +159,35 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             String time = null;
 
             pos = position;
+            //countPosition++;
 
-            Request req = notificationList.get(position);
+            Request req = notificationList.get(pos);
 
-            Constant.Actions action = req.getAction();
+            int action = req.getUserRequestReference().getAction();
 
-            if (action == Constant.Actions.REQUEST_SENT) {
+            if (action == Constant.Actions.REQUEST_SENT.value) {
                 message = "Your reqeust has been sent";
                 senderORreceiver = req.getTo();
                 bSend.setVisibility(View.GONE);
                 bReject.setVisibility(View.GONE);
                 bView.setVisibility(View.GONE);
-            } else if (action == Constant.Actions.REQUEST_RECEIVED) {
+            } else if (action == Constant.Actions.REQUEST_RECEIVED.value) {
                 message = "You have received a request";
                 senderORreceiver = req.getFrom();
                 bView.setVisibility(View.GONE);
-            } else if (action == Constant.Actions.LOCATION_SENT) {
+            } else if (action == Constant.Actions.LOCATION_SENT.value) {
                 message = "Your location has been sent";
                 senderORreceiver = req.getTo();
                 bSend.setVisibility(View.GONE);
                 bReject.setVisibility(View.GONE);
                 bView.setVisibility(View.GONE);
-            } else if (action == Constant.Actions.LOCATION_RECEIVED) {
+            } else if (action == Constant.Actions.LOCATION_RECEIVED.value) {
                 message = "You have received the location";
                 senderORreceiver = req.getFrom();
                 bSend.setVisibility(View.GONE);
                 bReject.setVisibility(View.GONE);
                 bView.setVisibility(View.VISIBLE);
-            } else if (action == Constant.Actions.REQEUST_DECLINED) {
+            } else if (action == Constant.Actions.REQEUST_DECLINED.value) {
                 message = "Request is declined";
                 senderORreceiver = req.getTo();
                 bSend.setVisibility(View.GONE);
@@ -206,39 +210,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             setMessage(message);
             setSender(senderORreceiver);
             setTime(time);
-        }
-
-
-        //@Override
-        public void onClick(View v) {
-            Log.i(TAG, "onClick: button clicked");
-            switch (v.getId()) {
-                case R.id.bSend:
-                    Request req = notificationList.get(pos);
-                    /*new RequestAdapter().updateRequest(
-                            req.getFrom(),
-                            req.getTo(),
-                            req.get, //// TODO: 30/10/17 add child id as the data member in Request class for updating the data
-                            Constant.Actions.LOCATION_SENT,
-                            LandingActivity.location
-                            );*/
-                    break;
-                case R.id.bReject:
-                    break;
-                case R.id.bView:
-                    Log.i(TAG, "onClick: View clicked with position "+pos);
-                    Request req1 = notificationList.get(pos);
-                    Intent i = new Intent(context, MapsActivity.class);
-
-                    Bundle basket = new Bundle();
-                    basket.putDouble("latitude", req1.getLocation().latitude);
-                    basket.putDouble("longitude", req1.getLocation().longitude);
-
-                    i.putExtras(basket);
-
-                    context.startActivity(i);
-                    break;
-            }
         }
     }
 }

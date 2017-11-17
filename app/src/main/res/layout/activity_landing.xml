@@ -17,31 +17,32 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_marginBottom="10dp">
-    <Button
-        android:id="@+id/bask"
-        android:layout_width="290dp"
-        android:layout_height="40dp"
-        android:layout_marginLeft="5dp"
-        android:layout_marginBottom="5dp"
-        android:onClick="ask"
-        android:background="@drawable/bottonstyle"
-        android:textColor="#ffffff"
-        android:layout_weight="1"
-        android:text="Inquire location" />
+
+        <Button
+            android:id="@+id/bask"
+            android:layout_width="290dp"
+            android:layout_height="40dp"
+            android:layout_marginBottom="5dp"
+            android:layout_marginLeft="5dp"
+            android:layout_weight="1"
+            android:background="@drawable/bottonstyle"
+            android:onClick="askLocation"
+            android:text="Inquire location"
+            android:textColor="#ffffff" />
 
 
-    <Button
-        android:id="@+id/banswer"
-        android:layout_width="290dp"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp"
-        android:layout_marginBottom="5dp"
-        android:layout_height="40dp"
-        android:onClick="answer"
-        android:textColor="#ffffff"
-        android:background="@drawable/bottonstyle"
-        android:layout_weight="1"
-        android:text="Send Locatoin" />
+        <Button
+            android:id="@+id/banswer"
+            android:layout_width="290dp"
+            android:layout_height="40dp"
+            android:layout_marginBottom="5dp"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
+            android:layout_weight="1"
+            android:background="@drawable/bottonstyle"
+            android:onClick="sendLocation"
+            android:text="Send Locatoin"
+            android:textColor="#ffffff" />
 
     </LinearLayout>
 </LinearLayout>

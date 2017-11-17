@@ -3,6 +3,7 @@ package com.unic_1.hereim.Constants;
 import com.unic_1.hereim.Model.NotificationModel;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Created by unic-1 on 25/8/17.
@@ -43,4 +44,8 @@ public class Constant {
 
         return notificationList;
     }
+
+    private HashMap<String, String> countryCodes = new HashMap<>();
+
+
 }

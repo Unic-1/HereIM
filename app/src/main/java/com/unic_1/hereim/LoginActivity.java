@@ -51,7 +51,7 @@ public class LoginActivity extends AppCompatActivity {
 
         SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
         SharedPreferences.Editor edit=preferences.edit();
-        edit.putString("number","9647884306");
+        edit.putString("number","8240353705");
         edit.apply();
         if(!TextUtils.isEmpty(preferences.getString("number", ""))) {
             Intent i = new Intent(LoginActivity.this, LandingActivity.class);
@@ -78,7 +78,7 @@ public class LoginActivity extends AppCompatActivity {
                 //     user action.
                 Log.d(TAG, "onVerificationCompleted:" + credential);
 
-                SharedPreferences preferences = getSharedPreferences("user", Context.MODE_APPEND);
+                SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.putString("number", phone.getText().toString());
                 editor.apply();

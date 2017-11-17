@@ -17,6 +17,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 /**
  * Created by unic-1 on 15/9/17.
@@ -39,17 +40,17 @@ public class RequestAdapter implements RequestInterface {
 
 
 
-        DatabaseReference user1_ref = userReference.child(from).child("request_list").child(reference.getKey());
-        DatabaseReference user2_ref = userReference.child(to).child("request_list").child(reference.getKey());
+        DatabaseReference user1_ref = userReference.child(from).child("request_list").push();
+        DatabaseReference user2_ref = userReference.child(to).child("request_list").child(user1_ref.getKey());
 
         if (requestId == 0) {
             // Updates the request list of user
-            user1_ref.setValue(new UserRequestReference(Constant.Actions.REQUEST_SENT, reference.getKey()));
-            user2_ref.setValue(new UserRequestReference(Constant.Actions.REQUEST_RECEIVED, reference.getKey()));
+            user1_ref.setValue(new UserRequestReference(Constant.Actions.REQUEST_SENT.value, reference.getKey()));
+            user2_ref.setValue(new UserRequestReference(Constant.Actions.REQUEST_RECEIVED.value, reference.getKey()));
         } else if(requestId == 1) {
             // Updates the request list of user
-            user1_ref.setValue(new UserRequestReference(Constant.Actions.LOCATION_SENT, reference.getKey()));
-            user2_ref.setValue(new UserRequestReference(Constant.Actions.LOCATION_RECEIVED, reference.getKey()));
+            user1_ref.setValue(new UserRequestReference(Constant.Actions.LOCATION_SENT.value, reference.getKey()));
+            user2_ref.setValue(new UserRequestReference(Constant.Actions.LOCATION_RECEIVED.value, reference.getKey()));
         }
 
         reference.setValue(req);
@@ -155,11 +156,12 @@ public class RequestAdapter implements RequestInterface {
     public void updateRequest(String to, String from, String requestid, int action, LocationCoordinates locationCoordinates) {
         Log.i(TAG, "updateRequest: Called");
         FirebaseDatabase database = FirebaseDatabase.getInstance();
-        if (action == Constant.Actions.LOCATION_SENT.value) {
+        // Updating location in request of the request is sent
+        DatabaseReference reference = database.getReference("Request").child(requestid);
+        long timestamp = new Date().getTime();
 
-            // Updating location in request of the request is sent
-            DatabaseReference reference = database.getReference("Request").child(requestid).child("location");
-            reference.setValue(locationCoordinates);
+        if (action == Constant.Actions.LOCATION_SENT.value) {
+            reference.child("location").setValue(locationCoordinates);
             Log.i(TAG, "updateRequest: Location Sent");
 
             // Updating user request status on both sender and receiver
@@ -176,6 +178,7 @@ public class RequestAdapter implements RequestInterface {
             Log.i(TAG, "updateRequest: Updated status to both user");
 
         }
+        reference.child("timestamp").setValue(timestamp);
     }
     
 }

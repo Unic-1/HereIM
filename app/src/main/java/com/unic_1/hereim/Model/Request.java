@@ -105,11 +105,7 @@ public class Request {
         this.location = location;
     }
 
-    public Constant.Actions getAction() {
-        return requestReference.getAction();
-    }
-
-    public String getRequestId() {
-        return requestReference.getRequest_reference();
+    public UserRequestReference getUserRequestReference() {
+        return requestReference;
     }
 }
