@@ -7,10 +7,17 @@ package com.unic_1.hereim.Model;
 public class UserRequestReference {
     public int action;
     public String request_reference;
+    public long order;
 
     public UserRequestReference(int action, String request_reference) {
         this.action = action;
         this.request_reference = request_reference;
+    }
+
+    public UserRequestReference(int action, String request_reference, long order) {
+        this.action = action;
+        this.request_reference = request_reference;
+        this.order = order;
     }
 
     public int getAction() {

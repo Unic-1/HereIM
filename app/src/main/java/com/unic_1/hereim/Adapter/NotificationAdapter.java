@@ -2,7 +2,7 @@ package com.unic_1.hereim.Adapter;
 
 import android.content.Context;
 import android.content.Intent;
-import android.os.Bundle;
+import android.net.Uri;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -13,13 +13,13 @@ import android.widget.TextView;
 
 import com.unic_1.hereim.Constants.Constant;
 import com.unic_1.hereim.LandingActivity;
-import com.unic_1.hereim.MapsActivity;
 import com.unic_1.hereim.Model.LocationCoordinates;
 import com.unic_1.hereim.Model.Request;
 import com.unic_1.hereim.R;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Locale;
 
 import static android.content.ContentValues.TAG;
 
@@ -66,20 +66,24 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         Button bSend, bReject, bView;
         int pos = 0;
 
-        public NotificationViewHolder(View itemView) {
+        private NotificationViewHolder(View itemView) {
             super(itemView);
-            tvMessage = (TextView) itemView.findViewById(R.id.tvMessage);
-            tvSender = (TextView) itemView.findViewById(R.id.tvSender);
-            tvTime = (TextView) itemView.findViewById(R.id.timetv);
-            bSend = (Button) itemView.findViewById(R.id.bSend);
-            bReject = (Button) itemView.findViewById(R.id.bReject);
-            bView = (Button) itemView.findViewById(R.id.bView);
+            tvMessage = itemView.findViewById(R.id.tvMessage);
+            tvSender = itemView.findViewById(R.id.tvSender);
+            tvTime = itemView.findViewById(R.id.timetv);
+            bSend = itemView.findViewById(R.id.bSend);
+            bReject = itemView.findViewById(R.id.bReject);
+            bView = itemView.findViewById(R.id.bView);
 
             bView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     Log.i(TAG, "onClick: View clicked with position " + pos);
                     Request req1 = notificationList.get(pos);
+                    /*
+                    * This code triggers the map within the app
+                    * For now we will work with the default map
+
                     Intent i = new Intent(context, MapsActivity.class);
 
                     Bundle basket = new Bundle();
@@ -89,6 +93,14 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                     i.putExtras(basket);
 
                     context.startActivity(i);
+
+
+                    */
+
+                    // This triggers the default system map
+                    String uri = String.format(Locale.ENGLISH, "geo:%f,%f", req1.getLocation().latitude, req1.getLocation().longitude);
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
+                    context.startActivity(intent);
 
                 }
             });
@@ -177,13 +189,13 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 bView.setVisibility(View.GONE);
             } else if (action == Constant.Actions.LOCATION_SENT.value) {
                 message = "Your location has been sent";
-                senderORreceiver = req.getTo();
+                senderORreceiver = req.getFrom();
                 bSend.setVisibility(View.GONE);
                 bReject.setVisibility(View.GONE);
                 bView.setVisibility(View.GONE);
             } else if (action == Constant.Actions.LOCATION_RECEIVED.value) {
                 message = "You have received the location";
-                senderORreceiver = req.getFrom();
+                senderORreceiver = req.getTo();
                 bSend.setVisibility(View.GONE);
                 bReject.setVisibility(View.GONE);
                 bView.setVisibility(View.VISIBLE);

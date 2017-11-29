@@ -1,5 +1,6 @@
 package com.unic_1.hereim.Adapter;
 
+import android.content.Context;
 import android.util.Log;
 
 import com.google.firebase.database.DataSnapshot;
@@ -8,6 +9,8 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.unic_1.hereim.Constants.Constant;
+import com.unic_1.hereim.Constants.FirebaseConstants;
+import com.unic_1.hereim.Database.ContactDataSouce;
 import com.unic_1.hereim.Model.LocationCoordinates;
 import com.unic_1.hereim.Model.Request;
 import com.unic_1.hereim.Model.UserRequestReference;
@@ -18,6 +21,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 
 /**
  * Created by unic-1 on 15/9/17.
@@ -29,28 +33,29 @@ import java.util.Date;
 public class RequestAdapter implements RequestInterface {
 
     final String TAG = "REQUEST ADAPTER";
+    final long UPPER_LIMIT = 99999999999999L;
 
     @Override
     public void addData(Request req, String to, String from, int requestId) {
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         // Creates unique id for every request
-        DatabaseReference reference = database.getReference("Request").push();
+        DatabaseReference reference = database.getReference(FirebaseConstants.REQUEST).push();
         // Gets Users reference
-        DatabaseReference userReference = database.getReference("Users");
+        DatabaseReference userReference = database.getReference(FirebaseConstants.USER);
 
 
 
-        DatabaseReference user1_ref = userReference.child(from).child("request_list").push();
-        DatabaseReference user2_ref = userReference.child(to).child("request_list").child(user1_ref.getKey());
+        DatabaseReference user1_ref = userReference.child(from).child(FirebaseConstants.REQUEST_LIST).push();
+        DatabaseReference user2_ref = userReference.child(to).child(FirebaseConstants.REQUEST_LIST).child(user1_ref.getKey());
 
         if (requestId == 0) {
             // Updates the request list of user
-            user1_ref.setValue(new UserRequestReference(Constant.Actions.REQUEST_SENT.value, reference.getKey()));
-            user2_ref.setValue(new UserRequestReference(Constant.Actions.REQUEST_RECEIVED.value, reference.getKey()));
+            user1_ref.setValue(new UserRequestReference(Constant.Actions.REQUEST_SENT.value, reference.getKey(), UPPER_LIMIT - req.getTimestamp()));
+            user2_ref.setValue(new UserRequestReference(Constant.Actions.REQUEST_RECEIVED.value, reference.getKey(), UPPER_LIMIT - req.getTimestamp()));
         } else if(requestId == 1) {
             // Updates the request list of user
-            user1_ref.setValue(new UserRequestReference(Constant.Actions.LOCATION_SENT.value, reference.getKey()));
-            user2_ref.setValue(new UserRequestReference(Constant.Actions.LOCATION_RECEIVED.value, reference.getKey()));
+            user1_ref.setValue(new UserRequestReference(Constant.Actions.LOCATION_SENT.value, reference.getKey(), UPPER_LIMIT - req.getTimestamp()));
+            user2_ref.setValue(new UserRequestReference(Constant.Actions.LOCATION_RECEIVED.value, reference.getKey(), UPPER_LIMIT - req.getTimestamp()));
         }
 
         reference.setValue(req);
@@ -64,9 +69,11 @@ public class RequestAdapter implements RequestInterface {
         final ArrayList<Request> requestList = new ArrayList<>();
 
         final FirebaseDatabase database = FirebaseDatabase.getInstance();
-        final DatabaseReference reference = database.getReference("Users").child(number).child("request_list");
+        final DatabaseReference reference = database.getReference(FirebaseConstants.USER)
+                .child(number)
+                .child(FirebaseConstants.REQUEST_LIST);
 
-        final DatabaseReference requestReference = database.getReference("Request");
+        final DatabaseReference requestReference = database.getReference(FirebaseConstants.REQUEST);
 
         synchronized (this) {
             reference.addValueEventListener(new ValueEventListener() {
@@ -78,10 +85,10 @@ public class RequestAdapter implements RequestInterface {
                         try {
                             // Parsing the user request list using JSON object
                             JSONObject object = new JSONObject(data.getValue().toString());
-                            final int action = new Integer(object.get("action").toString());
+                            final int action = new Integer(object.get(FirebaseConstants.ACTION).toString());
 
                             // Referencing a particular request
-                            final DatabaseReference request = requestReference.child(object.get("request_reference").toString());
+                            final DatabaseReference request = requestReference.child(object.get(FirebaseConstants.REQUEST_REFERENCE).toString());
                             request.addValueEventListener(new ValueEventListener() {
                                 @Override
                                 public void onDataChange(DataSnapshot dataSnapshot) {
@@ -96,28 +103,28 @@ public class RequestAdapter implements RequestInterface {
                                             requestList.add(
                                                     new Request(
                                                             (action == Constant.Actions.REQUEST_SENT.value) ? Constant.Actions.REQUEST_SENT : Constant.Actions.REQUEST_RECEIVED,
-                                                            requestData.getLong("timestamp"),
-                                                            requestData.getString("to"),
-                                                            requestData.getString("from")
+                                                            requestData.getLong(FirebaseConstants.TIMESTAMP),
+                                                            requestData.getString(FirebaseConstants.TO),
+                                                            requestData.getString(FirebaseConstants.FROM)
                                                     )
                                             );
                                         } else if (action == Constant.Actions.LOCATION_SENT.value || action == Constant.Actions.LOCATION_RECEIVED.value) {
                                             requestList.add(
                                                     new Request(
                                                             (action == Constant.Actions.LOCATION_SENT.value) ? Constant.Actions.LOCATION_SENT : Constant.Actions.LOCATION_RECEIVED,
-                                                            requestData.getLong("timestamp"),
-                                                            requestData.getString("to"),
-                                                            requestData.getString("from"),
-                                                            (LocationCoordinates) requestData.get("Location")
+                                                            requestData.getLong(FirebaseConstants.TIMESTAMP),
+                                                            requestData.getString(FirebaseConstants.TO),
+                                                            requestData.getString(FirebaseConstants.FROM),
+                                                            (LocationCoordinates) requestData.get(FirebaseConstants.LOCATION)
                                                     )
                                             );
                                         } else {
                                             requestList.add(
                                                     new Request(
                                                             Constant.Actions.REQEUST_DECLINED,
-                                                            requestData.getLong("timestamp"),
-                                                            requestData.getString("to"),
-                                                            requestData.getString("from")
+                                                            requestData.getLong(FirebaseConstants.TIMESTAMP),
+                                                            requestData.getString(FirebaseConstants.TO),
+                                                            requestData.getString(FirebaseConstants.FROM)
                                                     )
                                             );
                                             //requestList.notify();
@@ -157,28 +164,82 @@ public class RequestAdapter implements RequestInterface {
         Log.i(TAG, "updateRequest: Called");
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         // Updating location in request of the request is sent
-        DatabaseReference reference = database.getReference("Request").child(requestid);
+        DatabaseReference reference = database.getReference(FirebaseConstants.REQUEST).child(requestid);
         long timestamp = new Date().getTime();
 
         if (action == Constant.Actions.LOCATION_SENT.value) {
-            reference.child("location").setValue(locationCoordinates);
+            reference.child(FirebaseConstants.LOCATION).setValue(locationCoordinates);
             Log.i(TAG, "updateRequest: Location Sent");
 
             // Updating user request status on both sender and receiver
-            database.getReference("User").child(to).child("request_list").child(requestid).child("action").setValue(Constant.Actions.LOCATION_SENT.value);
-            database.getReference("User").child(from).child("request_list").child(requestid).child("action").setValue(Constant.Actions.LOCATION_RECEIVED.value);
+            database.getReference(FirebaseConstants.USER)
+                    .child(to)
+                    .child(FirebaseConstants.REQUEST_LIST)
+                    .child(requestid)
+                    .child("action")
+                    .setValue(Constant.Actions.LOCATION_SENT.value);
+            database.getReference(FirebaseConstants.USER)
+                    .child(from)
+                    .child(FirebaseConstants.REQUEST_LIST)
+                    .child(requestid)
+                    .child("action")
+                    .setValue(Constant.Actions.LOCATION_RECEIVED.value);
             Log.i(TAG, "updateRequest: Updated status to both user");
 
         } else if (action == Constant.Actions.REQEUST_DECLINED.value) {
 
             Log.i(TAG, "updateRequest: Request Declined");
             // Updating user request status on both sender and receiver
-            database.getReference("User").child(to).child("request_list").child(requestid).child("action").setValue(Constant.Actions.REQEUST_DECLINED.value);
-            database.getReference("User").child(from).child("request_list").child(requestid).child("action").setValue(Constant.Actions.REQUEST_RECEIVED.value);
+            database.getReference(FirebaseConstants.USER)
+                    .child(to)
+                    .child(FirebaseConstants.REQUEST_LIST)
+                    .child(requestid)
+                    .child(FirebaseConstants.ACTION)
+                    .setValue(Constant.Actions.REQEUST_DECLINED.value);
+            database.getReference(FirebaseConstants.USER)
+                    .child(from)
+                    .child(FirebaseConstants.REQUEST_LIST)
+                    .child(requestid)
+                    .child(FirebaseConstants.ACTION)
+                    .setValue(Constant.Actions.REQUEST_RECEIVED.value);
             Log.i(TAG, "updateRequest: Updated status to both user");
 
         }
         reference.child("timestamp").setValue(timestamp);
     }
-    
+
+    @Override
+    public void isPresent(final HashMap<String, ArrayList<String>> contactMap, final Context context) {
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference ref = database.getReference(FirebaseConstants.USER);
+
+        ref.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+
+                ContactDataSouce contactDataSouce = new ContactDataSouce();
+                contactDataSouce.getDBHelper(context);
+                contactDataSouce.openDatabase();
+                for (String key : contactMap.keySet()) {
+                    System.out.println("Checking "+key);
+
+                    for(String number: contactMap.get(key)) {
+                        if(dataSnapshot.hasChild(number)) {
+                            Log.i(TAG, "Present: " + key + " " + number);
+                            contactDataSouce.insertData(number, key);
+                        } else {
+                            System.out.println(number+" not present");
+                        }
+                    }
+                }
+                contactDataSouce.closeDatabase();
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
 }

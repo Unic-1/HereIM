@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#fff">
+    android:background="#fff"
+    android:id="@+id/container">
 
 
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -10,74 +12,101 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-            <LinearLayout
-                android:id="@+id/innerlinear"
-                android:layout_width="match_parent"
-                android:layout_height="250dp"
-                android:background="#ffae42"
-                android:orientation="vertical">
+        <LinearLayout
+            android:id="@+id/innerlinear"
+            android:layout_width="match_parent"
+            android:layout_height="250dp"
+            android:background="#ffae42"
+            android:orientation="vertical">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:layout_marginLeft="10dp"
-                    android:layout_marginRight="10dp"
-                    android:layout_marginTop="50dp"
-                    android:background="@drawable/border_style"
-                    android:text="WE WILL SEND YOUR ONE TIME PASSWORD TO VERIFY YOUR PHONE NUMBER. CARRIER SMS CHARGES WILL BE APPLIED."
-                     />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:layout_marginTop="50dp"
+                android:background="@drawable/border_style"
+                android:text="WE WILL SEND YOUR ONE TIME PASSWORD TO VERIFY YOUR PHONE NUMBER. CARRIER SMS CHARGES WILL BE APPLIED." />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:layout_marginLeft="10dp"
-                    android:layout_marginRight="10dp"
-                    android:layout_marginTop="40dp"
-                    android:background="@drawable/border_style"
-                    android:text="VERIFY YOUR PHONE NUMBER"
-                     />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:layout_marginTop="40dp"
+                android:background="@drawable/border_style"
+                android:text="VERIFY YOUR PHONE NUMBER" />
 
-            </LinearLayout>
+        </LinearLayout>
 
-            <ImageView
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:layout_below="@id/innerlinear"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="-25dp"
-                android:src="@drawable/gjhg" />
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_below="@id/innerlinear"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="-25dp"
+            android:src="@drawable/gjhg" />
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="250dp"
+            android:layout_height="wrap_content"
             android:orientation="vertical">
+
+            <EditText
+                android:id="@+id/etUsername"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/input_border"
+                android:hint="@string/username"
+                android:padding="10dp" />
 
             <Spinner
                 android:id="@+id/spinner"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
                 android:layout_marginLeft="10dp"
                 android:layout_marginRight="10dp"
-                android:layout_marginTop="20dp"
-                android:padding="10dp"
+                android:layout_marginTop="25dp"
                 android:background="@drawable/input_border"
-                android:entries="@array/Countries"
+                android:gravity="center_horizontal"
+                android:padding="10dp"
                 android:textAlignment="center" />
 
-            <EditText
-                android:id="@+id/etphone"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="10dp"
-                android:layout_marginTop="20dp"
-                android:padding="10dp"
-                android:background="@drawable/input_border"
-                android:hint="Enter Phone Number"
-                android:inputType="number"
-                android:textAlignment="center" />
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/etphone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginRight="10dp"
+                    android:layout_marginTop="5dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/input_border"
+                    android:hint="@string/enter_phone_number"
+                    android:inputType="phone"
+                    android:padding="10dp" />
+
+                <ImageButton
+                    android:id="@+id/refreshImageButton"
+                    android:layout_width="70dp"
+                    android:layout_height="70dp"
+                    android:layout_weight="1"
+
+                    android:background="@android:color/transparent"
+                    android:onClick="resendOtp"
+                    app:srcCompat="@mipmap/ic_refresh_black_24dp" />
+
+            </LinearLayout>
 
             <Button
                 android:id="@+id/bPhoneSubmit"

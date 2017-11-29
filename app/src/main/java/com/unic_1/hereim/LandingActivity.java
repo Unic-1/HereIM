@@ -7,12 +7,16 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
@@ -21,8 +25,8 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.firebase.database.ChildEventListener;
@@ -33,7 +37,11 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.unic_1.hereim.Adapter.NotificationAdapter;
 import com.unic_1.hereim.Adapter.RequestAdapter;
+import com.unic_1.hereim.Adapter.SuggestionAdapter;
 import com.unic_1.hereim.Constants.Constant;
+import com.unic_1.hereim.Constants.FirebaseConstants;
+import com.unic_1.hereim.Database.ContactDataSouce;
+import com.unic_1.hereim.Model.ContactModel;
 import com.unic_1.hereim.Model.LocationCoordinates;
 import com.unic_1.hereim.Model.Request;
 import com.unic_1.hereim.Model.UserRequestReference;
@@ -43,22 +51,22 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
-//import android.support.v7.widget.ThemedSpinnerAdapter.Helper;
+public class LandingActivity extends AppCompatActivity
+        implements ConnectivityReceiver.ConnectivityReceiverListener {
 
-public class LandingActivity extends AppCompatActivity {
-
-    ///
     public static Location location;
     private static String sNumber;
+    private final int CONTACT_REQUEST_CODE = 100;
+    private final int LOCATION_REQUEST_CODE = 101;
     private final int STATUS_INQUIRE_LOCATION = 0;
     private final int STATUS_SEND_LOCATION = 1;
     private final float MIN_DISTANCE_CHANGE_FOR_UPDATES = 1; // 1 meters
     private final long MIN_TIME_BW_UPDATES = 1000; // 1 sec
     private final String TAG = "LANDING_ACTIVITY";
     private int alertStatus;
-    ///
     private boolean isGPSEnabled = false;
     private boolean isNetworkEnabled = false;
     private AlertDialog.Builder alertDialogBuilder;
@@ -66,6 +74,7 @@ public class LandingActivity extends AppCompatActivity {
     private LocationManager locationManager;
     private LocationListener locationListener;
     private ProgressDialog mProgressDialog;
+    private SetupUsersContact mUsersContact;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,27 +85,47 @@ public class LandingActivity extends AppCompatActivity {
         mProgressDialog.setMessage("Loading...");
         mProgressDialog.setCancelable(false);
         mProgressDialog.show();
+
+        if (!checkConnectivity()) {
+            mProgressDialog.hide();
+            showSnack(false);
+        }
+
         // Gets the users phone number
         SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
         sNumber = preferences.getString("number", "");
 
+        mUsersContact = new SetupUsersContact();
+
         Log.i(TAG, "logged in with " + sNumber);
 
-        settingUpLocation();
-
-        initializeNotification();
+        settingUpLocation(); // Setup location permission
+        initializeNotification(); // Populate the notification data
+        setContactPermission(); // Setup contact permission
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        Log.i(TAG, "onRequestPermissionsResult: " + requestCode);
+        switch (requestCode) {
+            case LOCATION_REQUEST_CODE:
+                // Checks if the permission is granted or not
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                        locationManager.requestLocationUpdates(locationManager.GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES, locationListener);
+                        Toast.makeText(LandingActivity.this, "Location request granted", Toast.LENGTH_SHORT).show();
+                    }
+                }
+                break;
 
-        // Checks if the permission is granted or not
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                locationManager.requestLocationUpdates(locationManager.GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES, locationListener);
-                Toast.makeText(LandingActivity.this, "Location request granted", Toast.LENGTH_SHORT).show();
-            }
+            case CONTACT_REQUEST_CODE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
+                        mUsersContact.execute();
+                    }
+                }
+                break;
         }
     }
 
@@ -116,42 +145,53 @@ public class LandingActivity extends AppCompatActivity {
     public void createDialog() {
         alertDialogBuilder = new AlertDialog.Builder(LandingActivity.this);
         View view = getLayoutInflater().inflate(R.layout.dialog_layout, null);
-        final EditText sendNumber = (EditText) view.findViewById(R.id.etSendNumber);
         Button bSend = (Button) view.findViewById(R.id.bSendDialog);
         Button bCancel = (Button) view.findViewById(R.id.bCancelDialog);
+
+        //Setting up AutoCompleteTextView
+        final AutoCompleteTextView autoCompleteNumber = (AutoCompleteTextView) view.findViewById(R.id.autoCompleteNumber);
+        ArrayList<ContactModel> contact = getContacts();
+        System.out.println("Contact: " + contact.get(0));
+        SuggestionAdapter adapter = new SuggestionAdapter(LandingActivity.this, R.layout.suggestion_item, contact);
+        autoCompleteNumber.setAdapter(adapter);
 
         bSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "Pushing location...");
+                if (checkConnectivity()) {
+                    Log.d(TAG, "Pushing location...");
 
-                long timestamp = new Date().getTime();
-                Request req = null;
+                    long timestamp = new Date().getTime();
+                    Request req = null;
 
-                // Asking location
-                if (alertStatus == STATUS_INQUIRE_LOCATION) {
-                    req = new Request(
-                            timestamp,
-                            sNumber,
-                            sendNumber.getText().toString()
-                    );
+                    // Asking location
+                    if (alertStatus == STATUS_INQUIRE_LOCATION) {
+                        req = new Request(
+                                timestamp,
+                                autoCompleteNumber.getText().toString(),
+                                sNumber
+                        );
+                    }
+                    // TODO: 18/11/17 location is null since lastKnownLocation is not working
+                    // Sending location
+                    else if (alertStatus == STATUS_SEND_LOCATION) {
+                        req = new Request(
+                                timestamp,
+                                sNumber,
+                                autoCompleteNumber.getText().toString(),
+                                new LocationCoordinates(
+                                        location.getLatitude(),
+                                        location.getLongitude()
+                                )
+                        );
+                    }
+
+                    new RequestAdapter().addData(req, autoCompleteNumber.getText().toString(), sNumber, alertStatus);
+                    Log.d(TAG, "Dialog onClick: Completed");
+                    alertDialog.cancel();
+                } else {
+                    showSnack(false);
                 }
-                // Sending location
-                else if (alertStatus == STATUS_SEND_LOCATION) {
-                    req = new Request(
-                            timestamp,
-                            sNumber,
-                            sendNumber.getText().toString(),
-                            new LocationCoordinates(
-                                    location.getLatitude(),
-                                    location.getLongitude()
-                            )
-                    );
-                }
-
-                new RequestAdapter().addData(req, sendNumber.getText().toString(), sNumber, alertStatus);
-                Log.d(TAG, "Dialog onClick: Completed");
-                alertDialog.cancel();
             }
         });
 
@@ -350,7 +390,8 @@ public class LandingActivity extends AppCompatActivity {
                         } else {
                             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES, locationListener);
 
-                            Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                            location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                            Log.i(TAG, "last known location: " + location);
                         }
                     }
                 }
@@ -367,15 +408,17 @@ public class LandingActivity extends AppCompatActivity {
         final ArrayList<Request> requestList = new ArrayList<>();
 
         final FirebaseDatabase database = FirebaseDatabase.getInstance();
-        final DatabaseReference reference = database.getReference("Users").child(sNumber).child("request_list");
+        final DatabaseReference reference = database.getReference(FirebaseConstants.USER)
+                .child(sNumber)
+                .child(FirebaseConstants.REQUEST_LIST);
 
-        final DatabaseReference requestReference = database.getReference("Request");
+        final DatabaseReference requestReference = database.getReference(FirebaseConstants.REQUEST);
 
         final RecyclerView.Adapter adapter = new NotificationAdapter(requestList, this);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(adapter);
 
-        reference.addValueEventListener(new ValueEventListener() {
+        reference.orderByChild(FirebaseConstants.TIMESTAMP).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 Log.i(TAG, "onDataChange: ");
@@ -384,10 +427,10 @@ public class LandingActivity extends AppCompatActivity {
                     try {
                         // Parsing the user request list using JSON object
                         final JSONObject object = new JSONObject(data.getValue().toString());
-                        final int action = new Integer(object.get("action").toString());
+                        final int action = new Integer(object.get(FirebaseConstants.ACTION).toString());
 
                         // Referencing a particular request
-                        final DatabaseReference request = requestReference.child(object.get("request_reference").toString());
+                        final DatabaseReference request = requestReference.child(object.get(FirebaseConstants.REQUEST_LIST).toString());
                         request.addValueEventListener(new ValueEventListener() {
                             @Override
                             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -526,23 +569,25 @@ public class LandingActivity extends AppCompatActivity {
         final ArrayList<Request> requestList = new ArrayList<>();
 
         final FirebaseDatabase database = FirebaseDatabase.getInstance();
-        final DatabaseReference reference = database.getReference("Users").child(sNumber).child("request_list");
+        final DatabaseReference reference = database.getReference(FirebaseConstants.USER)
+                .child(sNumber)
+                .child(FirebaseConstants.REQUEST_LIST);
 
-        final DatabaseReference requestReference = database.getReference("Request");
+        final DatabaseReference requestReference = database.getReference(FirebaseConstants.REQUEST);
 
         final RecyclerView.Adapter adapter = new NotificationAdapter(requestList, this);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(adapter);
 
 
-        reference.addChildEventListener(new ChildEventListener() {
+        reference.orderByChild(FirebaseConstants.ORDER).addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(final DataSnapshot dataSnapshot, String s) {
-                Log.i(TAG, "onChildAdded: " + dataSnapshot + ":" + dataSnapshot.child("request_reference").getValue().toString() + " : " + dataSnapshot.child("action").getValue().toString());
+                Log.i(TAG, "onChildAdded: " + dataSnapshot + ":" + dataSnapshot.child(FirebaseConstants.REQUEST_REFERENCE).getValue().toString() + " : " + dataSnapshot.child(FirebaseConstants.ACTION).getValue().toString());
                 // Parsing the user request list using JSON object
-                final int action = new Integer(dataSnapshot.child("action").getValue().toString());
+                final int action = new Integer(dataSnapshot.child(FirebaseConstants.ACTION).getValue().toString());
                 // Referencing a particular request
-                final DatabaseReference request = requestReference.child(dataSnapshot.child("request_reference").getValue().toString());
+                final DatabaseReference request = requestReference.child(dataSnapshot.child(FirebaseConstants.REQUEST_REFERENCE).getValue().toString());
                 request.addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot1) {
@@ -559,29 +604,29 @@ public class LandingActivity extends AppCompatActivity {
                                         new Request(
                                                 new UserRequestReference(
                                                         (action == Constant.Actions.REQUEST_SENT.value) ? Constant.Actions.REQUEST_SENT.value : Constant.Actions.REQUEST_RECEIVED.value,
-                                                        dataSnapshot.child("request_reference").getValue().toString()
+                                                        dataSnapshot.child(FirebaseConstants.REQUEST_REFERENCE).getValue().toString()
                                                 ),
-                                                requestData.getLong("timestamp"),
-                                                requestData.getString("to"),
-                                                requestData.getString("from")
+                                                requestData.getLong(FirebaseConstants.TIMESTAMP),
+                                                requestData.getString(FirebaseConstants.TO),
+                                                requestData.getString(FirebaseConstants.FROM)
                                         )
                                 );
                             } else if (action == Constant.Actions.LOCATION_SENT.value || action == Constant.Actions.LOCATION_RECEIVED.value) {
-                                JSONObject obj = new JSONObject(requestData.get("location").toString());
+                                JSONObject obj = new JSONObject(requestData.get(FirebaseConstants.LOCATION).toString());
                                 LocationCoordinates locationCoordinates = new LocationCoordinates(
-                                        obj.getDouble("latitude"),
-                                        obj.getDouble("longitude")
+                                        obj.getDouble(FirebaseConstants.LATITUDE),
+                                        obj.getDouble(FirebaseConstants.LONGITUDE)
                                 );
 
                                 requestList.add(
                                         new Request(
                                                 new UserRequestReference(
                                                         (action == Constant.Actions.LOCATION_SENT.value) ? Constant.Actions.LOCATION_SENT.value : Constant.Actions.LOCATION_RECEIVED.value,
-                                                        dataSnapshot.child("request_reference").getValue().toString()
+                                                        dataSnapshot.child(FirebaseConstants.REQUEST_REFERENCE).getValue().toString()
                                                 ),
-                                                requestData.getLong("timestamp"),
-                                                requestData.getString("to"),
-                                                requestData.getString("from"),
+                                                requestData.getLong(FirebaseConstants.TIMESTAMP),
+                                                requestData.getString(FirebaseConstants.TO),
+                                                requestData.getString(FirebaseConstants.FROM),
                                                 locationCoordinates
                                         )
                                 );
@@ -590,18 +635,18 @@ public class LandingActivity extends AppCompatActivity {
                                         new Request(
                                                 new UserRequestReference(
                                                         Constant.Actions.REQEUST_DECLINED.value,
-                                                        dataSnapshot.child("request_reference").getValue().toString()
+                                                        dataSnapshot.child(FirebaseConstants.REQUEST_REFERENCE).getValue().toString()
                                                 ),
-                                                requestData.getLong("timestamp"),
-                                                requestData.getString("to"),
-                                                requestData.getString("from")
+                                                requestData.getLong(FirebaseConstants.TIMESTAMP),
+                                                requestData.getString(FirebaseConstants.TO),
+                                                requestData.getString(FirebaseConstants.FROM)
                                         )
                                 );
 
 
                             }
-                            Log.i(TAG, "list size: "+requestList.size());
-                            if(mProgressDialog.isShowing()) {
+                            Log.i(TAG, "list size: " + requestList.size());
+                            if (mProgressDialog.isShowing()) {
                                 mProgressDialog.hide();
                             }
                             adapter.notifyDataSetChanged();
@@ -640,7 +685,13 @@ public class LandingActivity extends AppCompatActivity {
             }
         });
 
+        if (mProgressDialog.isShowing()) {
+            mProgressDialog.hide();
+        }
+
         Log.i(TAG, "initNotification: list length " + requestList.size());
+        /*if(requestList.size() == 0)
+            mProgressDialog.hide();*/
     }
 
     // GPS Disabled alert
@@ -664,5 +715,105 @@ public class LandingActivity extends AppCompatActivity {
         });
         AlertDialog alert = alertDialogBuilder.create();
         alert.show();
+    }
+
+    private void setContactPermission() {
+        if (ActivityCompat.shouldShowRequestPermissionRationale(
+                LandingActivity.this,
+                Manifest.permission.READ_CONTACTS
+        )) {
+            Toast.makeText(this, "Contact permission needed", Toast.LENGTH_SHORT).show();
+        } else {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_CONTACTS}, CONTACT_REQUEST_CODE);
+            } else {
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_CONTACTS}, CONTACT_REQUEST_CODE);
+                } else {
+                    mUsersContact.execute();
+                }
+            }
+        }
+    }
+
+    private ArrayList<ContactModel> getContacts() {
+        ContactDataSouce cd = new ContactDataSouce();
+        cd.getDBHelper(this);
+        cd.openDatabase();
+        ArrayList<ContactModel> contact = cd.getData();
+        cd.closeDatabase();
+        return contact;
+    }
+
+    public boolean checkConnectivity() {
+        return ConnectivityReceiver.isConnected();
+    }
+
+    public void showSnack(boolean isConnected) {
+        String message;
+
+        if (isConnected) {
+            message = "Network connected";
+        } else {
+            message = "Network not connected!!";
+        }
+
+        Snackbar.make(findViewById(R.id.container), message, Snackbar.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onNetworkConnectionChanged(boolean isConnected) {
+        showSnack(isConnected);
+    }
+
+    public class SetupUsersContact extends AsyncTask<Void, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            HashMap<String, ArrayList<String>> contactMap = getContactList();
+
+            new RequestAdapter().isPresent(contactMap, LandingActivity.this);
+
+            ContactDataSouce cd = new ContactDataSouce();
+            cd.getDBHelper(LandingActivity.this);
+            cd.openDatabase();
+            System.out.println(cd.getData());
+            cd.closeDatabase();
+            return null;
+        }
+
+        private HashMap<String, ArrayList<String>> getContactList() {
+            HashMap<String, ArrayList<String>> contactMap = new HashMap<>();
+            Cursor cursor = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
+
+            if (cursor != null) {
+                while (cursor.moveToNext()) {
+                    String name = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+                    String number = parseNumber(cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)));
+                    Log.i(TAG, "Name: " + name + ", Number: " + number);
+                    if (contactMap.containsKey(name)) {
+                        contactMap.get(name).add(number);
+                    } else {
+                        ArrayList<String> numberList = new ArrayList<>();
+                        numberList.add(number);
+                        contactMap.put(name, numberList);
+                    }
+                }
+
+                cursor.close();
+            }
+
+            return contactMap;
+        }
+
+        private String parseNumber(String number) {
+            StringBuilder sb = new StringBuilder();
+            for (char c : number.toCharArray()) {
+                if (Character.isDigit(c)) {
+                    sb.append(c);
+                }
+            }
+            return sb.toString();
+        }
     }
 }
