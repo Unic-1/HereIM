@@ -400,7 +400,7 @@ public class LandingActivity extends AppCompatActivity
     }
 
 
-    @Deprecated
+    /*@Deprecated
     private void initNotification() {
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.notificationRecyclerView);
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this);
@@ -440,7 +440,7 @@ public class LandingActivity extends AppCompatActivity
                                     // Parsing request data using JSON object
                                     JSONObject requestData = new JSONObject(dataSnapshot.getValue().toString());
 
-                                    /*
+                                    *//*
                                     * Before UserRequestReference was added to Request class as data member
                                     * This code works fine
                                     if (action == Constant.Actions.REQUEST_SENT.value || action == Constant.Actions.REQUEST_RECEIVED.value) {
@@ -480,7 +480,7 @@ public class LandingActivity extends AppCompatActivity
                                         );
 
 
-                                    }*/
+                                    }*//*
 
                                     // After adding UserRequestReference as data member in Request class
                                     if (action == Constant.Actions.REQUEST_SENT.value || action == Constant.Actions.REQUEST_RECEIVED.value) {
@@ -489,7 +489,7 @@ public class LandingActivity extends AppCompatActivity
                                                 new Request(
                                                         new UserRequestReference(
                                                                 (action == Constant.Actions.REQUEST_SENT.value) ? Constant.Actions.REQUEST_SENT.value : Constant.Actions.REQUEST_RECEIVED.value,
-                                                                object.getString("request_reference")
+                                                                object.getString("requestID")
                                                         ),
                                                         requestData.getLong("timestamp"),
                                                         requestData.getString("to"),
@@ -507,7 +507,7 @@ public class LandingActivity extends AppCompatActivity
                                                 new Request(
                                                         new UserRequestReference(
                                                                 (action == Constant.Actions.LOCATION_SENT.value) ? Constant.Actions.LOCATION_SENT.value : Constant.Actions.LOCATION_RECEIVED.value,
-                                                                object.getString("request_reference")
+                                                                object.getString("requestID")
                                                         ),
                                                         requestData.getLong("timestamp"),
                                                         requestData.getString("to"),
@@ -520,7 +520,7 @@ public class LandingActivity extends AppCompatActivity
                                                 new Request(
                                                         new UserRequestReference(
                                                                 Constant.Actions.REQEUST_DECLINED.value,
-                                                                object.getString("request_reference")
+                                                                object.getString("requestID")
                                                         ),
                                                         requestData.getLong("timestamp"),
                                                         requestData.getString("to"),
@@ -559,6 +559,12 @@ public class LandingActivity extends AppCompatActivity
         });
 
         Log.i(TAG, "initNotification: list length " + requestList.size());
+    }*/
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        MyApplication.getInstance().setConnectivityListener(this);
     }
 
     // Initialized notification
@@ -583,11 +589,12 @@ public class LandingActivity extends AppCompatActivity
         reference.orderByChild(FirebaseConstants.ORDER).addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(final DataSnapshot dataSnapshot, String s) {
-                Log.i(TAG, "onChildAdded: " + dataSnapshot + ":" + dataSnapshot.child(FirebaseConstants.REQUEST_REFERENCE).getValue().toString() + " : " + dataSnapshot.child(FirebaseConstants.ACTION).getValue().toString());
+                Log.i(TAG, "onChildAdded: " + dataSnapshot);// + ":" + dataSnapshot.child(FirebaseConstants.REQUEST_ID).getValue().toString() + " : " + dataSnapshot.child(FirebaseConstants.ACTION).getValue().toString());
                 // Parsing the user request list using JSON object
+
                 final int action = new Integer(dataSnapshot.child(FirebaseConstants.ACTION).getValue().toString());
                 // Referencing a particular request
-                final DatabaseReference request = requestReference.child(dataSnapshot.child(FirebaseConstants.REQUEST_REFERENCE).getValue().toString());
+                final DatabaseReference request = requestReference.child(dataSnapshot.child(FirebaseConstants.REQUEST_ID).getValue().toString());
                 request.addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot1) {
@@ -603,8 +610,9 @@ public class LandingActivity extends AppCompatActivity
                                 requestList.add(
                                         new Request(
                                                 new UserRequestReference(
+                                                        dataSnapshot.getKey(),
                                                         (action == Constant.Actions.REQUEST_SENT.value) ? Constant.Actions.REQUEST_SENT.value : Constant.Actions.REQUEST_RECEIVED.value,
-                                                        dataSnapshot.child(FirebaseConstants.REQUEST_REFERENCE).getValue().toString()
+                                                        dataSnapshot.child(FirebaseConstants.REQUEST_ID).getValue().toString()
                                                 ),
                                                 requestData.getLong(FirebaseConstants.TIMESTAMP),
                                                 requestData.getString(FirebaseConstants.TO),
@@ -621,8 +629,9 @@ public class LandingActivity extends AppCompatActivity
                                 requestList.add(
                                         new Request(
                                                 new UserRequestReference(
+                                                        dataSnapshot.getKey(),
                                                         (action == Constant.Actions.LOCATION_SENT.value) ? Constant.Actions.LOCATION_SENT.value : Constant.Actions.LOCATION_RECEIVED.value,
-                                                        dataSnapshot.child(FirebaseConstants.REQUEST_REFERENCE).getValue().toString()
+                                                        dataSnapshot.child(FirebaseConstants.REQUEST_ID).getValue().toString()
                                                 ),
                                                 requestData.getLong(FirebaseConstants.TIMESTAMP),
                                                 requestData.getString(FirebaseConstants.TO),
@@ -634,8 +643,9 @@ public class LandingActivity extends AppCompatActivity
                                 requestList.add(
                                         new Request(
                                                 new UserRequestReference(
+                                                        dataSnapshot.getKey(),
                                                         Constant.Actions.REQEUST_DECLINED.value,
-                                                        dataSnapshot.child(FirebaseConstants.REQUEST_REFERENCE).getValue().toString()
+                                                        dataSnapshot.child(FirebaseConstants.REQUEST_ID).getValue().toString()
                                                 ),
                                                 requestData.getLong(FirebaseConstants.TIMESTAMP),
                                                 requestData.getString(FirebaseConstants.TO),
@@ -758,7 +768,7 @@ public class LandingActivity extends AppCompatActivity
             message = "Network not connected!!";
         }
 
-        Snackbar.make(findViewById(R.id.container), message, Snackbar.LENGTH_SHORT).show();
+        Snackbar.make(findViewById(R.id.landingcontainer), message, Snackbar.LENGTH_SHORT).show();
     }
 
     @Override
@@ -812,6 +822,9 @@ public class LandingActivity extends AppCompatActivity
                 if (Character.isDigit(c)) {
                     sb.append(c);
                 }
+            }
+            if(sb.toString().length() > 10) {
+                return sb.toString().substring(2);
             }
             return sb.toString();
         }

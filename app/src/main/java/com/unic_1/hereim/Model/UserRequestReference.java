@@ -5,34 +5,32 @@ package com.unic_1.hereim.Model;
  */
 
 public class UserRequestReference {
-    public int action;
     public String request_reference;
+    public int action;
+    public String requestID;
     public long order;
 
-    public UserRequestReference(int action, String request_reference) {
-        this.action = action;
+    public UserRequestReference(String request_reference, int action, String requestID) {
         this.request_reference = request_reference;
+        this.action = action;
+        this.requestID = requestID;
     }
 
-    public UserRequestReference(int action, String request_reference, long order) {
+    public UserRequestReference(int action, String requestID, long order) {
         this.action = action;
-        this.request_reference = request_reference;
+        this.requestID = requestID;
         this.order = order;
-    }
-
-    public int getAction() {
-        return action;
-    }
-
-    public void setAction(int action) {
-        this.action = action;
     }
 
     public String getRequest_reference() {
         return request_reference;
     }
 
-    public void setRequest_reference(String request_reference) {
-        this.request_reference = request_reference;
+    public int getAction() {
+        return action;
+    }
+
+    public String getRequestID() {
+        return requestID;
     }
 }

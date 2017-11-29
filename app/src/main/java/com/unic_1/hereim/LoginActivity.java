@@ -179,6 +179,8 @@ public class LoginActivity extends AppCompatActivity
             hideFirst();
             showSecond();
         }
+
+        MyApplication.getInstance().setConnectivityListener(this);
     }
 
     @Override
@@ -332,7 +334,7 @@ public class LoginActivity extends AppCompatActivity
             message = "Network not connected!!";
         }
 
-        Snackbar.make(findViewById(R.id.container), message, Snackbar.LENGTH_SHORT).show();
+        Snackbar.make(findViewById(R.id.logincontainer), message, Snackbar.LENGTH_INDEFINITE).show();
     }
 
     @Override

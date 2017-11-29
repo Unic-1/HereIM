@@ -122,6 +122,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                             req.getFrom(),
                             req.getTo(),
                             req.getUserRequestReference().getRequest_reference(),
+                            req.getUserRequestReference().getRequestID(),
                             Constant.Actions.LOCATION_SENT.value,
                             new LocationCoordinates(
                                     LandingActivity.location.getLatitude(),
@@ -146,6 +147,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                             req.getFrom(),
                             req.getTo(),
                             req.getUserRequestReference().getRequest_reference(),
+                            req.getUserRequestReference().getRequestID(),
                             Constant.Actions.REQEUST_DECLINED.value,
                             null
                     );

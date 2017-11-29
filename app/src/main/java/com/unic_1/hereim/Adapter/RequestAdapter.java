@@ -88,7 +88,7 @@ public class RequestAdapter implements RequestInterface {
                             final int action = new Integer(object.get(FirebaseConstants.ACTION).toString());
 
                             // Referencing a particular request
-                            final DatabaseReference request = requestReference.child(object.get(FirebaseConstants.REQUEST_REFERENCE).toString());
+                            final DatabaseReference request = requestReference.child(object.get(FirebaseConstants.REQUEST_ID).toString());
                             request.addValueEventListener(new ValueEventListener() {
                                 @Override
                                 public void onDataChange(DataSnapshot dataSnapshot) {
@@ -160,7 +160,7 @@ public class RequestAdapter implements RequestInterface {
     }
 
     @Override
-    public void updateRequest(String to, String from, String requestid, int action, LocationCoordinates locationCoordinates) {
+    public void updateRequest(String to, String from, String userReferenceId, String requestid, int action, LocationCoordinates locationCoordinates) {
         Log.i(TAG, "updateRequest: Called");
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         // Updating location in request of the request is sent
@@ -172,24 +172,28 @@ public class RequestAdapter implements RequestInterface {
             Log.i(TAG, "updateRequest: Location Sent");
 
             // Updating user request status on both sender and receiver
+
             database.getReference(FirebaseConstants.USER)
                     .child(to)
                     .child(FirebaseConstants.REQUEST_LIST)
-                    .child(requestid)
-                    .child("action")
-                    .setValue(Constant.Actions.LOCATION_SENT.value);
+                    .child(userReferenceId)
+                    .setValue(
+                            new UserRequestReference(Constant.Actions.LOCATION_RECEIVED.value, requestid, UPPER_LIMIT - timestamp)
+                    );
             database.getReference(FirebaseConstants.USER)
                     .child(from)
                     .child(FirebaseConstants.REQUEST_LIST)
-                    .child(requestid)
-                    .child("action")
-                    .setValue(Constant.Actions.LOCATION_RECEIVED.value);
+                    .child(userReferenceId)
+                    .setValue(
+                            new UserRequestReference(Constant.Actions.LOCATION_SENT.value, requestid, UPPER_LIMIT - timestamp)
+                    );
             Log.i(TAG, "updateRequest: Updated status to both user");
 
         } else if (action == Constant.Actions.REQEUST_DECLINED.value) {
 
             Log.i(TAG, "updateRequest: Request Declined");
             // Updating user request status on both sender and receiver
+            // TODO: 29/11/17 Change this part looking at the location send code
             database.getReference(FirebaseConstants.USER)
                     .child(to)
                     .child(FirebaseConstants.REQUEST_LIST)

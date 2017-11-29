@@ -15,6 +15,6 @@ import java.util.HashMap;
 public interface RequestInterface {
     void addData(Request req, String to, String from, int requestId);
     ArrayList<Request> getData(String number);
-    void updateRequest(String to, String from, String requestid, int action, LocationCoordinates locationCoordinates);
+    void updateRequest(String to, String from, String userReferencId, String requestid, int action, LocationCoordinates locationCoordinates);
     void isPresent(HashMap<String, ArrayList<String>> contactMap, Context context);
 }
