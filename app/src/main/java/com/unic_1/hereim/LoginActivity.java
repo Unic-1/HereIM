@@ -33,6 +33,11 @@ import com.unic_1.hereim.Constants.FirebaseConstants;
 
 import java.util.concurrent.TimeUnit;
 
+/*
+* This activity is unused for the time being because of the following:
+* OTP is not received in different network carrier
+* */
+
 // TODO: 29/11/17 If the OTP session is expired display the message accordingly
 
 public class LoginActivity extends AppCompatActivity

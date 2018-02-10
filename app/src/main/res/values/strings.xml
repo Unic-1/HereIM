@@ -13,4 +13,6 @@
     <string name="enter_number">Enter number:</string>
     <string name="enter_phone_number">Enter Phone Number</string>
     <string name="username">Username</string>
+    <string name="etMobileText">Enter mobile number</string>
+    <string name="indexButtonText">Submit</string>
 </resources>

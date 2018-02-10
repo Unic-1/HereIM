@@ -150,10 +150,10 @@ public class LandingActivity extends AppCompatActivity
 
         //Setting up AutoCompleteTextView
         final AutoCompleteTextView autoCompleteNumber = (AutoCompleteTextView) view.findViewById(R.id.autoCompleteNumber);
-        ArrayList<ContactModel> contact = getContacts();
+        /*ArrayList<ContactModel> contact = getContacts();
         System.out.println("Contact: " + contact.get(0));
         SuggestionAdapter adapter = new SuggestionAdapter(LandingActivity.this, R.layout.suggestion_item, contact);
-        autoCompleteNumber.setAdapter(adapter);
+        autoCompleteNumber.setAdapter(adapter);*/
 
         bSend.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -163,6 +163,18 @@ public class LandingActivity extends AppCompatActivity
 
                     long timestamp = new Date().getTime();
                     Request req = null;
+
+                    double latitude, longitude;
+
+                    if (location != null) {
+
+                        latitude = location.getLatitude();
+                        longitude = location.getLongitude();
+
+                    } else {
+                        latitude = 0;
+                        longitude = 0;
+                    }
 
                     // Asking location
                     if (alertStatus == STATUS_INQUIRE_LOCATION) {
@@ -180,8 +192,8 @@ public class LandingActivity extends AppCompatActivity
                                 sNumber,
                                 autoCompleteNumber.getText().toString(),
                                 new LocationCoordinates(
-                                        location.getLatitude(),
-                                        location.getLongitude()
+                                        latitude,
+                                        longitude
                                 )
                         );
                     }
