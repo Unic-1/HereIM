@@ -93,12 +93,14 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                     i.putExtras(basket);
 
                     context.startActivity(i);
-
-
                     */
 
                     // This triggers the default system map
-                    String uri = String.format(Locale.ENGLISH, "geo:%f,%f", req1.getLocation().latitude, req1.getLocation().longitude);
+                    String uri = String.format(
+                            Locale.ENGLISH
+                            , "geo:%f,%f?q=%f,%f(Location received)", req1.getLocation().latitude, req1.getLocation().longitude, req1.getLocation().latitude, req1.getLocation().longitude);
+                    Log.d(TAG, "Uri: "+uri);
+                    /*"geo:<lat>,<long>?q=<lat>,<long>(Label+Name)"*/
                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
                     context.startActivity(intent);
 
