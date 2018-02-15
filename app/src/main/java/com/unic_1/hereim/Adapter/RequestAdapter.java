@@ -197,15 +197,17 @@ public class RequestAdapter implements RequestInterface {
             database.getReference(FirebaseConstants.USER)
                     .child(to)
                     .child(FirebaseConstants.REQUEST_LIST)
-                    .child(requestid)
-                    .child(FirebaseConstants.ACTION)
-                    .setValue(Constant.Actions.REQEUST_DECLINED.value);
+                    .child(userReferenceId)
+                    .setValue(
+                            new UserRequestReference(Constant.Actions.REQEUST_DECLINED.value, requestid, UPPER_LIMIT - timestamp)
+                    );
             database.getReference(FirebaseConstants.USER)
                     .child(from)
                     .child(FirebaseConstants.REQUEST_LIST)
-                    .child(requestid)
-                    .child(FirebaseConstants.ACTION)
-                    .setValue(Constant.Actions.REQUEST_RECEIVED.value);
+                    .child(userReferenceId)
+                    .setValue(
+                            new UserRequestReference(Constant.Actions.REQEUST_DECLINED.value, requestid, UPPER_LIMIT - timestamp)
+                    );
             Log.i(TAG, "updateRequest: Updated status to both user");
 
         }
