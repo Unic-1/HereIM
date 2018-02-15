@@ -402,7 +402,7 @@ public class LandingActivity extends AppCompatActivity
                         } else {
                             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_BW_UPDATES, MIN_DISTANCE_CHANGE_FOR_UPDATES, locationListener);
 
-                            location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                            location = getLastKnownLocation();
                             Log.i(TAG, "last known location: " + location);
                         }
                     }
@@ -840,5 +840,22 @@ public class LandingActivity extends AppCompatActivity
             }
             return sb.toString();
         }
+    }
+
+    private Location getLastKnownLocation() {
+        locationManager = (LocationManager)getApplicationContext().getSystemService(LOCATION_SERVICE);
+        List<String> providers = locationManager.getProviders(true);
+        Location bestLocation = null;
+        for (String provider : providers) {
+            Location l = locationManager.getLastKnownLocation(provider);
+            if (l == null) {
+                continue;
+            }
+            if (bestLocation == null || l.getAccuracy() < bestLocation.getAccuracy()) {
+                // Found best last known location: %s", l);
+                bestLocation = l;
+            }
+        }
+        return bestLocation;
     }
 }
