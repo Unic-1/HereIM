@@ -74,9 +74,9 @@ public class LoginActivity extends AppCompatActivity
         sCountryCode = Constant.COUNTRYCODE[0];
 
         SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
-        SharedPreferences.Editor edit = preferences.edit();
+        /*SharedPreferences.Editor edit = preferences.edit();
         edit.putString("number","8240353705"); // TODO: 24/11/17 Remove this line while releasing
-        edit.apply();
+        edit.apply();*/
         if (!TextUtils.isEmpty(preferences.getString("number", ""))) {
             Intent i = new Intent(LoginActivity.this, LandingActivity.class);
 
@@ -204,13 +204,15 @@ public class LoginActivity extends AppCompatActivity
         if (checkConnectivity()) {
             if (sPageStatus == ENTER_NUMBER) {
                 if (!TextUtils.isEmpty(mPhoneNumberField.getText()) && sCountryCode != null && !TextUtils.isEmpty(mUsername.getText())) {
-                    sTempNumberStore = "+" + sCountryCode + mPhoneNumberField.getText().toString();
-                    sTempUsernameStore = mUsername.getText().toString();
+//                    sTempNumberStore = "+" + sCountryCode + mPhoneNumberField.getText().toString();
+                    sTempNumberStore = mPhoneNumberField.getText().toString();
 
+                    sTempUsernameStore = mUsername.getText().toString();
+                    Log.d(TAG, sTempNumberStore);
                     PhoneAuthProvider.getInstance().verifyPhoneNumber(
                              sTempNumberStore,        // Phone number to verify
-                            60,                 // Timeout duration
-                            TimeUnit.SECONDS,   // Unit of timeout
+                            2,                 // Timeout duration
+                            TimeUnit.MINUTES,   // Unit of timeout
                             this,               // Activity (for callback binding)
                             mCallbacks);        // OnVerificationStateChangedCallbacks
 
