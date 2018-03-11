@@ -150,10 +150,10 @@ public class LandingActivity extends AppCompatActivity
 
         //Setting up AutoCompleteTextView
         final AutoCompleteTextView autoCompleteNumber = (AutoCompleteTextView) view.findViewById(R.id.autoCompleteNumber);
-        /*ArrayList<ContactModel> contact = getContacts();
+        ArrayList<ContactModel> contact = getContacts();
         System.out.println("Contact: " + contact.get(0));
         SuggestionAdapter adapter = new SuggestionAdapter(LandingActivity.this, R.layout.suggestion_item, contact);
-        autoCompleteNumber.setAdapter(adapter);*/
+        autoCompleteNumber.setAdapter(adapter);
 
         bSend.setOnClickListener(new View.OnClickListener() {
             @Override

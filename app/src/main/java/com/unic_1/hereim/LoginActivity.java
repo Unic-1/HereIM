@@ -56,7 +56,6 @@ public class LoginActivity extends AppCompatActivity
     private FirebaseAuth mAuth;
     // [END declare_auth]
 
-    private boolean mVerificationInProgress = false;
     private String mVerificationId;
     private PhoneAuthProvider.ForceResendingToken mResendToken;
     private PhoneAuthProvider.OnVerificationStateChangedCallbacks mCallbacks;
@@ -64,19 +63,19 @@ public class LoginActivity extends AppCompatActivity
     private EditText mPhoneNumberField;
     private EditText mUsername;
     private Spinner mCountrySpinner;
-    private ProgressDialog mProgressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        Log.i(TAG, "onCreate: ");
+        
         sCountryCode = Constant.COUNTRYCODE[0];
 
-        SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
-        /*SharedPreferences.Editor edit = preferences.edit();
-        edit.putString("number","8240353705"); // TODO: 24/11/17 Remove this line while releasing
-        edit.apply();*/
+
+        SharedPreferences preferences = this.getSharedPreferences("user", Context.MODE_PRIVATE);
+        Log.i(TAG, preferences.getString("number", ""));
         if (!TextUtils.isEmpty(preferences.getString("number", ""))) {
             Intent i = new Intent(LoginActivity.this, LandingActivity.class);
 
@@ -85,8 +84,6 @@ public class LoginActivity extends AppCompatActivity
 
         mPhoneNumberField = findViewById(R.id.etphone);
         mUsername = findViewById(R.id.etUsername);
-        mProgressDialog = new ProgressDialog(this);
-        mProgressDialog.setMessage("Verifying OTP");
         mCountrySpinner = (Spinner) findViewById(R.id.spinner);
 
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, Constant.COUNTRYLIST);
@@ -117,19 +114,20 @@ public class LoginActivity extends AppCompatActivity
                 //     user action.
                 Log.d(TAG, "onVerificationCompleted:" + credential);
 
-                SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
+                SharedPreferences preferences = LoginActivity.this.getSharedPreferences("user", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = preferences.edit();
-                editor.putString("number", mPhoneNumberField.getText().toString());
+                editor.putString("number", sTempNumberStore);
                 editor.apply();
 
                 FirebaseDatabase.getInstance()
-                        .getReference(mPhoneNumberField.getText().toString())
+                        .getReference(FirebaseConstants.USER)
+                        .child(sTempNumberStore)
                         .child(FirebaseConstants.NAME)
-                        .setValue(mUsername.getText().toString());
+                        .setValue(sTempUsernameStore);
 
 
                 Intent i = new Intent(LoginActivity.this, LandingActivity.class);
-                //startActivity(i); // TODO: 25/11/17 Uncomment this line
+                startActivity(i);
             }
 
             @Override
@@ -177,6 +175,7 @@ public class LoginActivity extends AppCompatActivity
     protected void onResume() {
         super.onResume();
         Log.i(TAG, "onResume: ");
+
         if (sPageStatus == ENTER_NUMBER) {
             hideSecond();
             showFirst();
@@ -200,6 +199,12 @@ public class LoginActivity extends AppCompatActivity
         super.onStop();
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putInt("sPageStatus", sPageStatus);
+        super.onSaveInstanceState(outState);
+    }
+
     public void login(View v) {
         if (checkConnectivity()) {
             if (sPageStatus == ENTER_NUMBER) {
@@ -221,12 +226,14 @@ public class LoginActivity extends AppCompatActivity
 
                     // Shows OTP components
                     showSecond();
+                    sPageStatus = ENTER_OTP;
                 } else {
                     Toast.makeText(this, "Please enter all the fields", Toast.LENGTH_SHORT).show();
                 }
             } else if (sPageStatus == ENTER_OTP) {
                 if (!TextUtils.isEmpty(mPhoneNumberField.getText())) {
                     PhoneAuthCredential credential = PhoneAuthProvider.getCredential(mVerificationId, mPhoneNumberField.getText().toString());
+                    sPageStatus = ENTER_NUMBER;
                 }
             }
         } else {
