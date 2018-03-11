@@ -1,0 +1,9 @@
+******HereIM Issuses******
+1. while login: 
+         *  submit button not working properly.
+         *  on pressing submit button shows a message "enter the all the fields".
+         *  Redirects to the main page only after restaring the app again.
+2. After login
+         * location sending/inquirying problem. i.e. not receiving any responds from other app. 
+          
+         
